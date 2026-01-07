@@ -1,0 +1,25 @@
+{
+  "name": "splendly",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "prettier": "^3.0.0"
+  },
+  "description": "Smart money management built for everyday use.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KumarDhananjaya/Spendly.git"
+  },
+  "license": "ISC"
+}
