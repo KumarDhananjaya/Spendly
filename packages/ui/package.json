@@ -4,6 +4,8 @@
     "main": "./index.ts",
     "peerDependencies": {
         "react": "*",
-        "react-native": "*"
+        "react-native": "*",
+        "expo-blur": "*",
+        "expo-linear-gradient": "*"
     }
 }

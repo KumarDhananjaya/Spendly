@@ -7,27 +7,33 @@ interface TypographyProps {
     style?: TextStyle;
 }
 
-export const Typography: React.FC<TypographyProps> = ({ children, variant = 'body', style }) => {
-    return <Text style={[styles[variant], style]}>{children}</Text>;
+export const Typography = ({ children, variant = 'body', style }: TypographyProps) => {
+    return (
+        <Text style={[styles.base, (styles as any)[variant], style]}>
+            {children}
+        </Text>
+    );
 };
 
 const styles = StyleSheet.create({
+    base: {
+        color: '#FFFFFF',
+    },
     h1: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#121212',
+        fontSize: 32,
+        fontWeight: '800',
     },
     h2: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#121212',
+        fontSize: 24,
+        fontWeight: '700',
     },
     body: {
         fontSize: 16,
-        color: '#424242',
+        color: '#A0A0A0',
     },
     caption: {
         fontSize: 12,
-        color: '#757575',
+        color: 'rgba(255, 255, 255, 0.5)',
+        letterSpacing: 1,
     },
 });
