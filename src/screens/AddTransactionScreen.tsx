@@ -27,7 +27,7 @@ export default function AddTransactionScreen() {
     const [category, setCategory] = useState('Food');
     const [note, setNote] = useState('');
     const router = useRouter();
-    const addTransaction = useFinanceStore((state) => state.addTransaction);
+    const { addTransaction, currency } = useFinanceStore();
 
     const handleNumberPress = (num: string) => {
         if (amount === '0' && num !== '.') {
@@ -94,7 +94,7 @@ export default function AddTransactionScreen() {
                         </TouchableOpacity>
                         <Typography variant="caption" style={{ marginTop: 8 }}>Amount</Typography>
                         <Typography variant="h1" style={styles.amountText}>
-                            ${amount}
+                            {currency}{amount}
                         </Typography>
                     </View>
 
