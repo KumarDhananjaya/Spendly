@@ -29,7 +29,7 @@ export const Typography = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles: { [key: string]: any } = StyleSheet.create({
     base: {
         color: theme.colors.text,
         fontFamily: 'System',
