@@ -9,7 +9,7 @@ import { theme } from '../constants/theme';
 import { useFinanceStore } from '../store/useFinanceStore';
 
 export default function HomeScreen() {
-    const { transactions, getBalance, getExpenses, getEarnings } = useFinanceStore();
+    const { transactions, getBalance, getExpenses, getEarnings, currency } = useFinanceStore();
     const router = useRouter();
 
     return (
@@ -18,7 +18,7 @@ export default function HomeScreen() {
                 <View style={styles.header}>
                     <Typography variant="caption">Total Balance</Typography>
                     <Typography variant="h1" style={styles.balance}>
-                        ${getBalance().toLocaleString()}
+                        {currency}{getBalance().toLocaleString()}
                     </Typography>
                 </View>
 
@@ -28,7 +28,7 @@ export default function HomeScreen() {
                             <ArrowDownLeft size={20} color={theme.colors.secondary} />
                         </View>
                         <Typography variant="caption">Earnings</Typography>
-                        <Typography variant="h3">${getEarnings().toLocaleString()}</Typography>
+                        <Typography variant="h3">{currency}{getEarnings().toLocaleString()}</Typography>
                     </Card>
 
                     <Card style={styles.statsCard}>
@@ -36,7 +36,7 @@ export default function HomeScreen() {
                             <ArrowUpRight size={20} color={theme.colors.error} />
                         </View>
                         <Typography variant="caption">Expenses</Typography>
-                        <Typography variant="h3">${getExpenses().toLocaleString()}</Typography>
+                        <Typography variant="h3">{currency}{getExpenses().toLocaleString()}</Typography>
                     </Card>
                 </View>
 
@@ -65,7 +65,7 @@ export default function HomeScreen() {
                                 variant="h3"
                                 color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
                             >
-                                {tx.type === 'earning' ? '+' : '-'}${tx.amount.toLocaleString()}
+                                {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
                             </Typography>
                         </Card>
                     ))
