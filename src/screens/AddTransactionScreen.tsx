@@ -1,5 +1,6 @@
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { X } from 'lucide-react-native';
+import { Sparkles, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
     KeyboardAvoidingView,
@@ -16,6 +17,7 @@ import { Card } from '../components/Card';
 import { Typography } from '../components/Typography';
 import { theme } from '../constants/theme';
 import { TransactionType, useFinanceStore } from '../store/useFinanceStore';
+import { parseMessage } from '../utils/parser';
 
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Bills', 'Income', 'Others'];
 
@@ -57,6 +59,19 @@ export default function AddTransactionScreen() {
         router.back();
     };
 
+    const handleMagicPaste = async () => {
+        const text = await Clipboard.getStringAsync();
+        if (!text) return;
+
+        const result = parseMessage(text);
+        if (result) {
+            setAmount(result.amount.toString());
+            setType(result.type);
+            setCategory(result.category);
+            setNote(text); // Keep original text in notes
+        }
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
@@ -73,7 +88,11 @@ export default function AddTransactionScreen() {
 
                 <ScrollView style={styles.content}>
                     <View style={styles.amountContainer}>
-                        <Typography variant="caption">Amount</Typography>
+                        <TouchableOpacity style={styles.magicButton} onPress={handleMagicPaste}>
+                            <Sparkles size={16} color={theme.colors.primary} />
+                            <Typography variant="caption" color={theme.colors.primary}>Magic Paste</Typography>
+                        </TouchableOpacity>
+                        <Typography variant="caption" style={{ marginTop: 8 }}>Amount</Typography>
                         <Typography variant="h1" style={styles.amountText}>
                             ${amount}
                         </Typography>
@@ -177,9 +196,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginVertical: theme.spacing.lg,
     },
+    magicButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(187, 134, 252, 0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(187, 134, 252, 0.2)',
+    },
     amountText: {
         fontSize: 48,
-        marginTop: theme.spacing.xs,
+        marginTop: 4,
     },
     typeSwitcher: {
         flexDirection: 'row',
