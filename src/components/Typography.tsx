@@ -5,7 +5,7 @@ import { theme } from '../constants/theme';
 type TypographyVariant = 'h1' | 'h2' | 'h3' | 'body' | 'caption';
 
 interface TypographyProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     variant?: TypographyVariant;
     style?: StyleProp<TextStyle>;
     color?: string;
