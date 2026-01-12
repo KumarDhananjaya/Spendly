@@ -15,8 +15,10 @@ export interface Transaction {
 
 interface FinanceState {
     transactions: Transaction[];
+    currency: string;
     addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
     deleteTransaction: (id: string) => void;
+    setCurrency: (currency: string) => void;
     getBalance: () => number;
     getExpenses: () => number;
     getEarnings: () => number;
@@ -26,6 +28,7 @@ export const useFinanceStore = create<FinanceState>()(
     persist(
         (set, get) => ({
             transactions: [],
+            currency: '₹',
             addTransaction: (tx) => {
                 const newTx: Transaction = {
                     ...tx,
@@ -34,6 +37,7 @@ export const useFinanceStore = create<FinanceState>()(
                 };
                 set((state) => ({ transactions: [newTx, ...state.transactions] }));
             },
+            setCurrency: (currency) => set({ currency }),
             deleteTransaction: (id) => {
                 set((state) => ({
                     transactions: state.transactions.filter((t) => t.id !== id),
