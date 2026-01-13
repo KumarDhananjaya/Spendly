@@ -34,6 +34,7 @@ export interface Transaction {
     accountId: string;
     note: string;
     date: string;
+    isRecurring?: boolean;
 }
 
 interface FinanceState {
@@ -49,6 +50,7 @@ interface FinanceState {
     setCurrency: (currency: string) => void;
     setBudget: (categoryId: string, amount: number) => void;
     getCategorySpent: (categoryId: string) => number;
+    detectRecurring: () => void;
     getBalance: () => number;
     getExpenses: () => number;
     getEarnings: () => number;
@@ -135,6 +137,19 @@ export const useFinanceStore = create<FinanceState>()(
                         new Date(t.date).getMonth() === now.getMonth() &&
                         new Date(t.date).getFullYear() === now.getFullYear())
                     .reduce((acc, t) => acc + t.amount, 0);
+            },
+            detectRecurring: () => {
+                const txs = get().transactions;
+                const updatedTxs = txs.map(tx => {
+                    const matches = txs.filter(t =>
+                        t.id !== tx.id &&
+                        t.amount === tx.amount &&
+                        t.categoryId === tx.categoryId &&
+                        new Date(t.date).getDate() === new Date(tx.date).getDate()
+                    );
+                    return { ...tx, isRecurring: matches.length >= 1 };
+                });
+                set({ transactions: updatedTxs });
             },
             deleteTransaction: (id) => {
                 const txToDelete = get().transactions.find(t => t.id === id);
