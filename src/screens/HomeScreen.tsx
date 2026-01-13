@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { ArrowDownLeft, ArrowUpRight, Globe, Sparkles } from 'lucide-react-native';
-import * as React from 'react';
-import { useState } from 'react';
+import React from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -12,7 +11,7 @@ import { useFinanceStore } from '../store/useFinanceStore';
 export default function HomeScreen() {
     const { transactions, getBalance, getExpenses, getEarnings, currency, setCurrency, categories } = useFinanceStore();
     const router = useRouter();
-    const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
+    const [isCurrencyModalVisible, setCurrencyModalVisible] = React.useState(false);
 
     const commonCurrencies = ['₹', '$', '€', '£', '¥', '₿'];
 
@@ -78,7 +77,8 @@ export default function HomeScreen() {
                     transactions.map((tx) => {
                         const category = categories.find(c => c.id === tx.categoryId);
                         return (
-                            <Card key={tx.id} style={styles.transactionCard}>
+                            <View key={tx.id}>
+                                <Card style={styles.transactionCard}>
                                 <View style={styles.txLeft}>
                                     <Typography variant="h3">{category?.name || 'Other'}</Typography>
                                     <Typography variant="caption">{new Date(tx.date).toLocaleDateString()}</Typography>
