@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, Plus, Sparkles } from 'lucide-react-native';
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, Lock, Plus, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Modal, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,12 +31,20 @@ export default function HomeScreen() {
                         <Typography variant="caption">Welcome back 👋</Typography>
                         <Typography variant="h2" style={styles.greeting}>Your Finances</Typography>
                     </View>
-                    <TouchableOpacity
-                        style={styles.currencyButton}
-                        onPress={() => setCurrencyModalVisible(true)}
-                    >
-                        <Typography variant="h3" color={theme.colors.primary}>{currency}</Typography>
-                    </TouchableOpacity>
+                    <View style={styles.headerRight}>
+                        <TouchableOpacity
+                            style={styles.currencyButton}
+                            onPress={() => router.push('/security-settings')}
+                        >
+                            <Lock size={20} color={theme.colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.currencyButton}
+                            onPress={() => setCurrencyModalVisible(true)}
+                        >
+                            <Typography variant="h3" color={theme.colors.primary}>{currency}</Typography>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Balance Card */}
@@ -226,6 +234,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: theme.spacing.lg,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        gap: 12,
     },
     greeting: {
         marginTop: 4,

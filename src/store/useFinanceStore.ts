@@ -43,11 +43,13 @@ interface FinanceState {
     categories: Category[];
     budgets: Budget[];
     currency: string;
+    isAppLockEnabled: boolean;
     addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
     deleteTransaction: (id: string) => void;
     addAccount: (account: Omit<Account, 'id'>) => void;
     updateAccountBalance: (id: string, amount: number) => void;
     setCurrency: (currency: string) => void;
+    setAppLockEnabled: (enabled: boolean) => void;
     setBudget: (categoryId: string, amount: number) => void;
     getCategorySpent: (categoryId: string) => number;
     detectRecurring: () => void;
@@ -79,6 +81,7 @@ export const useFinanceStore = create<FinanceState>()(
             categories: DEFAULT_CATEGORIES,
             budgets: [],
             currency: '₹',
+            isAppLockEnabled: false,
             addTransaction: (tx) => {
                 const newTx: Transaction = {
                     ...tx,
@@ -117,6 +120,7 @@ export const useFinanceStore = create<FinanceState>()(
                 }));
             },
             setCurrency: (currency) => set({ currency }),
+            setAppLockEnabled: (enabled) => set({ isAppLockEnabled: enabled }),
             setBudget: (categoryId, amount) => {
                 set((state) => {
                     const existing = state.budgets.find(b => b.categoryId === categoryId);
