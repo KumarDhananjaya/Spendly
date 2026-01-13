@@ -73,3 +73,18 @@ export const parseMessage = (text: string): ParsedTransaction | null => {
 
     return null;
 };
+
+export const parseBulkMessages = (text: string): (ParsedTransaction & { raw: string })[] => {
+    const lines = text.split(/\n/);
+    const results: (ParsedTransaction & { raw: string })[] = [];
+
+    lines.forEach(line => {
+        if (line.trim().length < 10) return;
+        const result = parseMessage(line);
+        if (result) {
+            results.push({ ...result, raw: line });
+        }
+    });
+
+    return results;
+};
