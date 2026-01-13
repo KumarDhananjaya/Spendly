@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../src/components/Card';
 import { Typography } from '../../src/components/Typography';
@@ -10,11 +10,30 @@ import { useFinanceStore } from '../../src/store/useFinanceStore';
 export default function HistoryScreen() {
     const { transactions, categories, currency } = useFinanceStore();
     const [searchQuery, setSearchQuery] = React.useState('');
+    const [selectedType, setSelectedType] = React.useState<'all' | 'expense' | 'earning'>('all');
+    const [dateFilter, setDateFilter] = React.useState<'all' | 'today' | 'week' | 'month'>('all');
 
-    const filteredTransactions = transactions.filter(tx =>
-        tx.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        categories.find(c => c.id === tx.categoryId)?.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredTransactions = transactions.filter(tx => {
+        const matchesSearch = tx.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            categories.find(c => c.id === tx.categoryId)?.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesType = selectedType === 'all' || tx.type === selectedType;
+
+        const txDate = new Date(tx.date);
+        const now = new Date();
+        let matchesDate = true;
+
+        if (dateFilter === 'today') {
+            matchesDate = txDate.toDateString() === now.toDateString();
+        } else if (dateFilter === 'week') {
+            const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7); // Corrected weekAgo calculation
+            matchesDate = txDate >= weekAgo;
+        } else if (dateFilter === 'month') {
+            matchesDate = txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+        }
+
+        return matchesSearch && matchesType && matchesDate;
+    });
 
     return (
         <SafeAreaView style={styles.container}>
@@ -29,6 +48,33 @@ export default function HistoryScreen() {
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
+                </View>
+                <View style={styles.filters}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                        {(['all', 'expense', 'earning'] as const).map(t => (
+                            <TouchableOpacity
+                                key={t}
+                                style={[styles.filterPill, selectedType === t && styles.activeFilter]}
+                                onPress={() => setSelectedType(t)}
+                            >
+                                <Typography variant="caption" color={selectedType === t ? '#FFF' : theme.colors.textSecondary}>
+                                    {t.toUpperCase()}
+                                </Typography>
+                            </TouchableOpacity>
+                        ))}
+                        <View style={styles.filterDivider} />
+                        {(['all', 'today', 'week', 'month'] as const).map(d => (
+                            <TouchableOpacity
+                                key={d}
+                                style={[styles.filterPill, dateFilter === d && styles.activeFilter]}
+                                onPress={() => setDateFilter(d)}
+                            >
+                                <Typography variant="caption" color={dateFilter === d ? '#FFF' : theme.colors.textSecondary}>
+                                    {d.toUpperCase()}
+                                </Typography>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
                 </View>
             </View>
 
@@ -76,6 +122,30 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 12,
         marginTop: theme.spacing.md,
+        marginBottom: theme.spacing.md,
+    },
+    filters: {
+        marginTop: theme.spacing.xs,
+    },
+    filterScroll: {
+        flexDirection: 'row',
+    },
+    filterPill: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        marginRight: 8,
+    },
+    activeFilter: {
+        backgroundColor: theme.colors.primary,
+    },
+    filterDivider: {
+        width: 1,
+        height: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        marginHorizontal: 8,
+        alignSelf: 'center',
     },
     searchInput: {
         flex: 1,
