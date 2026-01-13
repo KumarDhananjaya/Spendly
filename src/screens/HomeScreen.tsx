@@ -79,17 +79,18 @@ export default function HomeScreen() {
                         return (
                             <View key={tx.id}>
                                 <Card style={styles.transactionCard}>
-                                <View style={styles.txLeft}>
-                                    <Typography variant="h3">{category?.name || 'Other'}</Typography>
-                                    <Typography variant="caption">{new Date(tx.date).toLocaleDateString()}</Typography>
-                                </View>
-                                <Typography
-                                    variant="h3"
-                                    color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
-                                >
-                                    {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
-                                </Typography>
-                            </Card>
+                                    <View style={styles.txLeft}>
+                                        <Typography variant="h3">{category?.name || 'Other'}</Typography>
+                                        <Typography variant="caption">{new Date(tx.date).toLocaleDateString()}</Typography>
+                                    </View>
+                                    <Typography
+                                        variant="h3"
+                                        color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
+                                    >
+                                        {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
+                                    </Typography>
+                                </Card>
+                            </View>
                         );
                     })
                 )}
