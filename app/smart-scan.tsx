@@ -3,12 +3,22 @@ import { Check, X } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../../src/components/Button';
-import { Card } from '../../src/components/Card';
-import { Typography } from '../../src/components/Typography';
-import { theme } from '../../src/constants/theme';
-import { useFinanceStore } from '../../src/store/useFinanceStore';
-import { parseBulkMessages } from '../../src/utils/parser';
+import { Button } from '../src/components/Button';
+import { Card } from '../src/components/Card';
+import { Typography } from '../src/components/Typography';
+import { theme } from '../src/constants/theme';
+import { Category, TransactionType, useFinanceStore } from '../src/store/useFinanceStore';
+import { parseBulkMessages } from '../src/utils/parser';
+
+interface DetectedTx {
+    amount: number;
+    type: TransactionType;
+    category: string;
+    raw: string;
+    selected: boolean;
+    categoryId: string;
+    accountId: string;
+}
 
 export default function SmartScanScreen() {
     const router = useRouter();
