@@ -9,21 +9,26 @@ interface TypographyProps {
     variant?: TypographyVariant;
     style?: StyleProp<TextStyle>;
     color?: string;
+    numberOfLines?: number;
 }
 
 export const Typography = ({
     children,
     variant = 'body',
     style,
-    color
+    color,
+    numberOfLines
 }: TypographyProps) => {
     return (
-        <Text style={[
-            styles.base,
-            styles[variant],
-            color ? { color } : null,
-            style
-        ]}>
+        <Text
+            numberOfLines={numberOfLines}
+            style={[
+                styles.base,
+                styles[variant],
+                color ? { color } : null,
+                style
+            ]}
+        >
             {children}
         </Text>
     );

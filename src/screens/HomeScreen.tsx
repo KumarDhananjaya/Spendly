@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { ArrowDownLeft, ArrowUpRight, Globe, Sparkles } from 'lucide-react-native';
-import React from 'react';
+import * as React from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
-import React from 'react';
+import * as React from 'react';
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
@@ -28,7 +28,7 @@ export default function SmartScanScreen() {
 
     const handleParse = () => {
         const results = parseBulkMessages(inputText);
-        setDetectedTxs(results.map(r => ({
+        setDetectedTxs(results.map((r: any) => ({
             ...r,
             selected: true,
             accountId: accounts[0]?.id || '',
@@ -121,7 +121,7 @@ export default function SmartScanScreen() {
                         ))}
 
                         <Button
-                            title={`Import ${detectedTxs.filter(t => t.selected).length} Transactions`}
+                            title={`Import ${detectedTxs.filter((t: DetectedTx) => t.selected).length} Transactions`}
                             onPress={handleImport}
                             style={styles.importButton}
                         />
