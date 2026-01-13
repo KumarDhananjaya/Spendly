@@ -1,7 +1,6 @@
 import React from 'react';
 import { Dimensions, Modal, ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { VictoryPie } from 'victory-native';
 import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
 import { Typography } from '../../src/components/Typography';
@@ -16,19 +15,21 @@ export default function AnalyticsScreen() {
     const [budgetAmount, setBudgetAmount] = React.useState('');
 
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
+    const totalExpense = getExpenses();
+    const totalEarning = getEarnings();
+    const savings = totalEarning - totalExpense;
+
     const catBreakdown = categories
         .filter(c => c.type === 'expense')
         .map(cat => {
             const total = expenseTransactions
                 .filter(t => t.categoryId === cat.id)
                 .reduce((acc, t) => acc + t.amount, 0);
-            return { x: cat.name, y: total, color: cat.color };
+            const percentage = totalExpense > 0 ? (total / totalExpense) * 100 : 0;
+            return { id: cat.id, name: cat.name, total, color: cat.color, percentage };
         })
-        .filter(d => d.y > 0);
-
-    const totalExpense = getExpenses();
-    const totalEarning = getEarnings();
-    const savings = totalEarning - totalExpense;
+        .filter(d => d.total > 0)
+        .sort((a, b) => b.total - a.total);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -56,41 +57,47 @@ export default function AnalyticsScreen() {
                 <Card style={[styles.savingsCard, { backgroundColor: savings >= 0 ? theme.colors.secondary : theme.colors.error }]}>
                     <Typography variant="label" color="rgba(255,255,255,0.8)">Net Savings</Typography>
                     <Typography variant="h1" color="#FFF">
-                        {currency}{Math.abs(savings).toLocaleString()}
+                        {savings >= 0 ? '+' : '-'}{currency}{Math.abs(savings).toLocaleString()}
                     </Typography>
                 </Card>
 
-                {/* Spending Chart */}
+                {/* Spending Breakdown */}
                 <View style={styles.section}>
                     <Typography variant="h3" style={styles.sectionTitle}>Spending Breakdown</Typography>
                     {catBreakdown.length > 0 ? (
-                        <Card style={styles.chartCard}>
-                            <VictoryPie
-                                data={catBreakdown}
-                                width={SCREEN_WIDTH - 80}
-                                height={220}
-                                colorScale={catBreakdown.map(d => d.color)}
-                                innerRadius={60}
-                                padAngle={2}
-                                style={{
-                                    labels: { fill: theme.colors.text, fontSize: 11, fontWeight: '500' }
-                                }}
-                            />
-                            <View style={styles.legendContainer}>
-                                {catBreakdown.map((item, index) => (
-                                    <View key={index} style={styles.legendItem}>
-                                        <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                                        <Typography variant="caption" style={{ flex: 1 }}>{item.x}</Typography>
-                                        <Typography variant="body" style={{ fontWeight: '600' }}>
-                                            {currency}{item.y.toLocaleString()}
-                                        </Typography>
+                        <Card>
+                            {catBreakdown.map((item, index) => {
+                                const isLast = index === catBreakdown.length - 1;
+                                return (
+                                    <View key={item.id} style={[styles.breakdownItem, !isLast && styles.breakdownBorder]}>
+                                        <View style={styles.breakdownHeader}>
+                                            <View style={styles.breakdownLeft}>
+                                                <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                                                <Typography variant="body" style={{ fontWeight: '500' }}>{item.name}</Typography>
+                                            </View>
+                                            <View style={styles.breakdownRight}>
+                                                <Typography variant="h3">{currency}{item.total.toLocaleString()}</Typography>
+                                                <Typography variant="caption">{item.percentage.toFixed(1)}%</Typography>
+                                            </View>
+                                        </View>
+                                        <View style={styles.progressBarContainer}>
+                                            <View
+                                                style={[
+                                                    styles.progressBarFill,
+                                                    { width: `${item.percentage}%`, backgroundColor: item.color }
+                                                ]}
+                                            />
+                                        </View>
                                     </View>
-                                ))}
-                            </View>
+                                );
+                            })}
                         </Card>
                     ) : (
                         <Card variant="flat" style={styles.emptyState}>
                             <Typography variant="body" align="center">No expense data yet</Typography>
+                            <Typography variant="caption" align="center" style={{ marginTop: 4 }}>
+                                Add some transactions to see your spending breakdown
+                            </Typography>
                         </Card>
                     )}
                 </View>
@@ -120,9 +127,9 @@ export default function AnalyticsScreen() {
                                             </Typography>
                                         </TouchableOpacity>
                                     </View>
-                                    <View style={styles.progressBar}>
+                                    <View style={styles.progressBarContainer}>
                                         <View style={[
-                                            styles.progressFill,
+                                            styles.progressBarFill,
                                             { width: `${progress * 100}%`, backgroundColor: isOver ? theme.colors.error : cat.color }
                                         ]} />
                                     </View>
@@ -216,28 +223,46 @@ const styles = StyleSheet.create({
     sectionTitle: {
         marginBottom: theme.spacing.md,
     },
-    chartCard: {
-        alignItems: 'center',
+
+    // Breakdown
+    breakdownItem: {
         padding: theme.spacing.md,
     },
-    legendContainer: {
-        width: '100%',
-        marginTop: theme.spacing.md,
+    breakdownBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
     },
-    legendItem: {
+    breakdownHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    breakdownLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
         gap: 12,
     },
-    legendDot: {
+    breakdownRight: {
+        alignItems: 'flex-end',
+    },
+    colorDot: {
         width: 12,
         height: 12,
         borderRadius: 6,
     },
-    emptyState: {
-        padding: theme.spacing.xl,
+    progressBarContainer: {
+        height: 8,
+        backgroundColor: theme.colors.surfaceVariant,
+        borderRadius: 4,
+        overflow: 'hidden',
     },
+    progressBarFill: {
+        height: '100%',
+        borderRadius: 4,
+    },
+
+    // Budget
     budgetItem: {
         padding: theme.spacing.md,
     },
@@ -251,17 +276,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 8,
     },
-    progressBar: {
-        height: 6,
-        backgroundColor: theme.colors.surfaceVariant,
-        borderRadius: 3,
-        marginBottom: 8,
-        overflow: 'hidden',
+
+    // Empty state
+    emptyState: {
+        padding: theme.spacing.xl,
     },
-    progressFill: {
-        height: '100%',
-        borderRadius: 3,
-    },
+
+    // Modal
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
