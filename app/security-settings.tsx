@@ -12,7 +12,7 @@ import { savePin } from '../src/utils/security';
 
 export default function SecuritySettings() {
     const router = useRouter();
-    const { isAppLockEnabled, setAppLockEnabled } = useFinanceStore();
+    const { isAppLockEnabled, setAppLockEnabled, isScreenCaptureBlocked, setScreenCaptureBlocked } = useFinanceStore();
     const [isSettingPin, setIsSettingPin] = useState(false);
     const [newPin, setNewPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');

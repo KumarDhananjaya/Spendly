@@ -72,6 +72,20 @@ export default function RootLayout() {
             headerShown: false
           }}
         />
+        <Stack.Screen
+          name="settings/index"
+          options={{
+            presentation: 'card',
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="settings/data"
+          options={{
+            presentation: 'card',
+            headerShown: false
+          }}
+        />
         {/* Placeholder for smart scan as it was added before */}
         <Stack.Screen
           name="smart-scan"

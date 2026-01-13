@@ -44,18 +44,21 @@ interface FinanceState {
     budgets: Budget[];
     currency: string;
     isAppLockEnabled: boolean;
+    isScreenCaptureBlocked: boolean;
     addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
     deleteTransaction: (id: string) => void;
     addAccount: (account: Omit<Account, 'id'>) => void;
     updateAccountBalance: (id: string, amount: number) => void;
     setCurrency: (currency: string) => void;
     setAppLockEnabled: (enabled: boolean) => void;
+    setScreenCaptureBlocked: (blocked: boolean) => void;
     setBudget: (categoryId: string, amount: number) => void;
     getCategorySpent: (categoryId: string) => number;
     detectRecurring: () => void;
     getBalance: () => number;
     getExpenses: () => number;
     getEarnings: () => number;
+    restoreData: (data: any) => void;
 }
 
 const DEFAULT_CATEGORIES: Category[] = [
@@ -82,6 +85,7 @@ export const useFinanceStore = create<FinanceState>()(
             budgets: [],
             currency: '₹',
             isAppLockEnabled: false,
+            isScreenCaptureBlocked: false,
             addTransaction: (tx) => {
                 const newTx: Transaction = {
                     ...tx,
@@ -121,6 +125,7 @@ export const useFinanceStore = create<FinanceState>()(
             },
             setCurrency: (currency) => set({ currency }),
             setAppLockEnabled: (enabled) => set({ isAppLockEnabled: enabled }),
+            setScreenCaptureBlocked: (blocked) => set({ isScreenCaptureBlocked: blocked }),
             setBudget: (categoryId, amount) => {
                 set((state) => {
                     const existing = state.budgets.find(b => b.categoryId === categoryId);
@@ -186,6 +191,15 @@ export const useFinanceStore = create<FinanceState>()(
             getEarnings: () => {
                 const txs = get().transactions;
                 return txs.reduce((acc, t) => acc + (t.type === 'earning' ? t.amount : 0), 0);
+            },
+            restoreData: (data) => {
+                set({
+                    transactions: data.transactions || [],
+                    accounts: data.accounts || DEFAULT_ACCOUNTS,
+                    categories: data.categories || DEFAULT_CATEGORIES,
+                    budgets: data.budgets || [],
+                    currency: data.currency || '₹',
+                });
             },
         }),
         {

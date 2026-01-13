@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, Lock, Plus, Sparkles } from 'lucide-react-native';
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, Plus, Settings, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Modal, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,9 +34,9 @@ export default function HomeScreen() {
                     <View style={styles.headerRight}>
                         <TouchableOpacity
                             style={styles.currencyButton}
-                            onPress={() => router.push('/security-settings')}
+                            onPress={() => router.push('/settings')}
                         >
-                            <Lock size={20} color={theme.colors.primary} />
+                            <Settings size={20} color={theme.colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.currencyButton}
