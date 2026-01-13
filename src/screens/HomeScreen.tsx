@@ -1,5 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, Plus, Settings, Sparkles } from 'lucide-react-native';
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, Plus, Settings, Sparkles, Wallet } from 'lucide-react-native';
 import React from 'react';
 import { Modal, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,10 +17,11 @@ export default function HomeScreen() {
 
     const commonCurrencies = ['₹', '$', '€', '£', '¥', '₿'];
     const recentTransactions = transactions.slice(0, 5);
+    const balance = getBalance();
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+            <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
@@ -33,13 +35,13 @@ export default function HomeScreen() {
                     </View>
                     <View style={styles.headerRight}>
                         <TouchableOpacity
-                            style={styles.currencyButton}
+                            style={styles.headerButton}
                             onPress={() => router.push('/settings')}
                         >
-                            <Settings size={20} color={theme.colors.primary} />
+                            <Settings size={20} color={theme.colors.text} />
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={styles.currencyButton}
+                            style={styles.headerButton}
                             onPress={() => setCurrencyModalVisible(true)}
                         >
                             <Typography variant="h3" color={theme.colors.primary}>{currency}</Typography>
@@ -47,23 +49,31 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                {/* Balance Card */}
-                <Card style={styles.balanceCard}>
+                {/* Balance Card with Gradient */}
+                <LinearGradient
+                    colors={['#4F46E5', '#7C3AED', '#9333EA']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.balanceCard}
+                >
                     <View style={styles.balanceHeader}>
-                        <Typography variant="label">Total Balance</Typography>
+                        <View style={styles.balanceIconContainer}>
+                            <Wallet size={20} color="rgba(255,255,255,0.9)" />
+                        </View>
+                        <Typography variant="label" style={styles.balanceLabel}>Total Balance</Typography>
                     </View>
                     <Typography variant="h1" style={styles.balanceAmount}>
-                        {currency}{getBalance().toLocaleString()}
+                        {currency}{balance.toLocaleString()}
                     </Typography>
 
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
                             <View style={[styles.statIcon, styles.incomeIcon]}>
-                                <ArrowDownLeft size={16} color={theme.colors.secondary} />
+                                <ArrowDownLeft size={16} color="#10B981" />
                             </View>
                             <View>
-                                <Typography variant="caption">Income</Typography>
-                                <Typography variant="h3" color={theme.colors.secondary}>
+                                <Typography variant="caption" style={styles.statLabel}>Income</Typography>
+                                <Typography variant="h3" style={styles.incomeText}>
                                     +{currency}{getEarnings().toLocaleString()}
                                 </Typography>
                             </View>
@@ -73,38 +83,40 @@ export default function HomeScreen() {
 
                         <View style={styles.statItem}>
                             <View style={[styles.statIcon, styles.expenseIcon]}>
-                                <ArrowUpRight size={16} color={theme.colors.error} />
+                                <ArrowUpRight size={16} color="#EF4444" />
                             </View>
                             <View>
-                                <Typography variant="caption">Expenses</Typography>
-                                <Typography variant="h3" color={theme.colors.error}>
+                                <Typography variant="caption" style={styles.statLabel}>Expenses</Typography>
+                                <Typography variant="h3" style={styles.expenseText}>
                                     -{currency}{getExpenses().toLocaleString()}
                                 </Typography>
                             </View>
                         </View>
                     </View>
-                </Card>
+                </LinearGradient>
 
                 {/* Quick Actions */}
                 <View style={styles.quickActions}>
                     <TouchableOpacity
                         style={styles.quickAction}
                         onPress={() => router.push('/add-transaction')}
+                        activeOpacity={0.7}
                     >
-                        <View style={styles.quickActionIcon}>
-                            <Plus size={20} color={theme.colors.primary} />
+                        <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                            <Plus size={22} color={theme.colors.primary} />
                         </View>
-                        <Typography variant="caption">Add</Typography>
+                        <Typography variant="body" style={styles.quickActionLabel}>Add</Typography>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.quickAction}
                         onPress={() => router.push('/smart-scan')}
+                        activeOpacity={0.7}
                     >
-                        <View style={styles.quickActionIcon}>
-                            <Sparkles size={20} color={theme.colors.primary} />
+                        <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+                            <Sparkles size={22} color="#A855F7" />
                         </View>
-                        <Typography variant="caption">Smart Scan</Typography>
+                        <Typography variant="body" style={styles.quickActionLabel}>Smart Scan</Typography>
                     </TouchableOpacity>
                 </View>
 
@@ -122,10 +134,20 @@ export default function HomeScreen() {
 
                 {transactions.length === 0 ? (
                     <Card variant="flat" style={styles.emptyState}>
-                        <Typography variant="body" align="center">No transactions yet</Typography>
-                        <Typography variant="caption" align="center" style={{ marginTop: 4 }}>
-                            Tap the + button to add your first transaction
+                        <View style={styles.emptyIconContainer}>
+                            <Wallet size={40} color={theme.colors.textMuted} />
+                        </View>
+                        <Typography variant="h3" align="center" style={styles.emptyTitle}>
+                            No transactions yet
                         </Typography>
+                        <Typography variant="caption" align="center" style={styles.emptySubtitle}>
+                            Start tracking your finances by adding your first transaction
+                        </Typography>
+                        <Button
+                            title="Add Transaction"
+                            onPress={() => router.push('/add-transaction')}
+                            style={styles.emptyButton}
+                        />
                     </Card>
                 ) : (
                     <Card style={styles.transactionsList}>
@@ -135,8 +157,10 @@ export default function HomeScreen() {
 
                             return (
                                 <View key={tx.id} style={[styles.transactionItem, !isLast && styles.transactionBorder]}>
-                                    <View style={[styles.categoryIcon, { backgroundColor: category?.color + '20' || theme.colors.glass }]}>
-                                        <Typography variant="h3">{category?.name?.charAt(0) || '?'}</Typography>
+                                    <View style={[styles.categoryIcon, { backgroundColor: (category?.color || theme.colors.primary) + '20' }]}>
+                                        <Typography variant="body" style={{ fontWeight: '700', color: category?.color || theme.colors.primary }}>
+                                            {category?.name?.charAt(0).toUpperCase() || '?'}
+                                        </Typography>
                                     </View>
                                     <View style={styles.transactionInfo}>
                                         <Typography variant="body" style={styles.transactionCategory}>
@@ -170,7 +194,14 @@ export default function HomeScreen() {
                 onPress={() => router.push('/add-transaction')}
                 activeOpacity={0.9}
             >
-                <Plus size={28} color="#FFF" />
+                <LinearGradient
+                    colors={['#4F46E5', '#7C3AED']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.fabGradient}
+                >
+                    <Plus size={28} color="#FFF" />
+                </LinearGradient>
             </TouchableOpacity>
 
             {/* Currency Modal */}
@@ -242,32 +273,53 @@ const styles = StyleSheet.create({
     greeting: {
         marginTop: 4,
     },
-    currencyButton: {
+    headerButton: {
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: theme.colors.glass,
+        backgroundColor: theme.colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
+        ...theme.shadows.sm,
     },
 
     // Balance Card
     balanceCard: {
-        backgroundColor: theme.colors.primary,
+        borderRadius: 24,
         padding: theme.spacing.xl,
         marginBottom: theme.spacing.lg,
+        ...theme.shadows.lg,
     },
     balanceHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
         marginBottom: theme.spacing.sm,
+    },
+    balanceIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    balanceLabel: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 14,
     },
     balanceAmount: {
         color: '#FFFFFF',
-        fontSize: 40,
+        fontSize: 44,
+        fontWeight: '700',
         marginBottom: theme.spacing.lg,
     },
     statsRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 16,
+        padding: theme.spacing.md,
     },
     statItem: {
         flex: 1,
@@ -283,10 +335,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     incomeIcon: {
-        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        backgroundColor: 'rgba(16, 185, 129, 0.25)',
     },
     expenseIcon: {
-        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        backgroundColor: 'rgba(239, 68, 68, 0.25)',
+    },
+    statLabel: {
+        color: 'rgba(255,255,255,0.7)',
+    },
+    incomeText: {
+        color: '#6EE7B7',
+        fontWeight: '600',
+    },
+    expenseText: {
+        color: '#FCA5A5',
+        fontWeight: '600',
     },
     statDivider: {
         width: 1,
@@ -306,17 +369,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: theme.spacing.md,
         backgroundColor: theme.colors.surface,
-        borderRadius: theme.roundness,
-        ...theme.shadows.sm,
+        borderRadius: 20,
+        ...theme.shadows.md,
     },
     quickActionIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: theme.colors.glass,
+        width: 52,
+        height: 52,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: theme.spacing.sm,
+    },
+    quickActionLabel: {
+        fontWeight: '600',
+        color: theme.colors.text,
     },
 
     // Section Header
@@ -335,21 +401,22 @@ const styles = StyleSheet.create({
     // Transactions
     transactionsList: {
         padding: 0,
+        borderRadius: 20,
     },
     transactionItem: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: theme.spacing.md,
-        gap: 12,
+        gap: 14,
     },
     transactionBorder: {
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
     },
     categoryIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -358,10 +425,33 @@ const styles = StyleSheet.create({
     },
     transactionCategory: {
         color: theme.colors.text,
-        fontWeight: '500',
+        fontWeight: '600',
+        marginBottom: 2,
     },
+
+    // Empty State
     emptyState: {
-        padding: theme.spacing.xl,
+        padding: theme.spacing.xxl,
+        alignItems: 'center',
+    },
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: theme.colors.surfaceVariant,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: theme.spacing.lg,
+    },
+    emptyTitle: {
+        marginBottom: theme.spacing.sm,
+    },
+    emptySubtitle: {
+        marginBottom: theme.spacing.lg,
+        color: theme.colors.textMuted,
+    },
+    emptyButton: {
+        marginTop: theme.spacing.sm,
     },
 
     // FAB
@@ -369,13 +459,14 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 90,
         right: 24,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: theme.colors.primary,
+        ...theme.shadows.lg,
+    },
+    fabGradient: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
         alignItems: 'center',
         justifyContent: 'center',
-        ...theme.shadows.lg,
     },
 
     // Modal
@@ -389,6 +480,7 @@ const styles = StyleSheet.create({
     modalContent: {
         width: '100%',
         padding: theme.spacing.xl,
+        borderRadius: 24,
     },
     modalTitle: {
         marginBottom: theme.spacing.lg,
@@ -402,10 +494,10 @@ const styles = StyleSheet.create({
     },
     currencyItem: {
         width: '30%',
-        height: 60,
+        height: 64,
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 12,
+        borderRadius: 16,
         backgroundColor: theme.colors.surfaceVariant,
     },
     activeCurrencyItem: {

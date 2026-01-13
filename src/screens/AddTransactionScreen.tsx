@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Check, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import {
     KeyboardAvoidingView,
@@ -13,7 +14,6 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Typography } from '../components/Typography';
 import { theme } from '../constants/theme';
@@ -30,6 +30,14 @@ export default function AddTransactionScreen() {
     const router = useRouter();
 
     const filteredCategories = categories.filter(c => c.type === type);
+
+    // Update selected category when type changes
+    React.useEffect(() => {
+        const firstCat = categories.find(c => c.type === type);
+        if (firstCat) {
+            setSelectedCategoryId(firstCat.id);
+        }
+    }, [type, categories]);
 
     const handleNumberPress = (num: string) => {
         if (amount === '0' && num !== '.') {
@@ -81,6 +89,13 @@ export default function AddTransactionScreen() {
         router.back();
     };
 
+    const numpadKeys = [
+        ['1', '2', '3'],
+        ['4', '5', '6'],
+        ['7', '8', '9'],
+        ['.', '0', '⌫']
+    ];
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
@@ -96,7 +111,7 @@ export default function AddTransactionScreen() {
                     </TouchableOpacity>
                     <Typography variant="h3">Add Transaction</Typography>
                     <TouchableOpacity onPress={handleMagicPaste} style={styles.magicButton}>
-                        <Sparkles size={20} color={theme.colors.primary} />
+                        <Sparkles size={20} color="#A855F7" />
                     </TouchableOpacity>
                 </View>
 
@@ -106,9 +121,9 @@ export default function AddTransactionScreen() {
                 >
                     {/* Amount Display */}
                     <View style={styles.amountContainer}>
-                        <Typography variant="label">Amount</Typography>
+                        <Typography variant="label" style={styles.amountLabel}>Amount</Typography>
                         <View style={styles.amountRow}>
-                            <Typography variant="h1" color={theme.colors.textMuted}>{currency}</Typography>
+                            <Typography variant="h1" style={styles.currencySymbol}>{currency}</Typography>
                             <Typography variant="h1" style={styles.amountText}>{amount}</Typography>
                         </View>
                     </View>
@@ -118,11 +133,12 @@ export default function AddTransactionScreen() {
                         <TouchableOpacity
                             style={[styles.typeButton, type === 'expense' && styles.expenseActive]}
                             onPress={() => setType('expense')}
+                            activeOpacity={0.8}
                         >
                             <Typography
                                 variant="body"
                                 color={type === 'expense' ? '#FFF' : theme.colors.textSecondary}
-                                style={{ fontWeight: '600' }}
+                                style={styles.typeButtonText}
                             >
                                 Expense
                             </Typography>
@@ -130,11 +146,12 @@ export default function AddTransactionScreen() {
                         <TouchableOpacity
                             style={[styles.typeButton, type === 'earning' && styles.incomeActive]}
                             onPress={() => setType('earning')}
+                            activeOpacity={0.8}
                         >
                             <Typography
                                 variant="body"
                                 color={type === 'earning' ? '#FFF' : theme.colors.textSecondary}
-                                style={{ fontWeight: '600' }}
+                                style={styles.typeButtonText}
                             >
                                 Income
                             </Typography>
@@ -144,56 +161,86 @@ export default function AddTransactionScreen() {
                     {/* Category Selection */}
                     <View style={styles.section}>
                         <Typography variant="label" style={styles.sectionLabel}>Category</Typography>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <View style={styles.pillsRow}>
-                                {filteredCategories.map((cat) => (
-                                    <TouchableOpacity
-                                        key={cat.id}
-                                        style={[
-                                            styles.categoryPill,
-                                            selectedCategoryId === cat.id && { backgroundColor: cat.color }
-                                        ]}
-                                        onPress={() => setSelectedCategoryId(cat.id)}
-                                    >
-                                        <Typography
-                                            variant="body"
-                                            color={selectedCategoryId === cat.id ? '#FFF' : theme.colors.text}
-                                            style={{ fontWeight: '500' }}
-                                        >
-                                            {cat.name}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </ScrollView>
+                        {filteredCategories.length === 0 ? (
+                            <Card variant="flat" style={styles.emptyCategories}>
+                                <Typography variant="body" align="center" color={theme.colors.textMuted}>
+                                    No categories available
+                                </Typography>
+                                <Typography variant="caption" align="center" style={{ marginTop: 4 }}>
+                                    Add categories in Settings → Data
+                                </Typography>
+                            </Card>
+                        ) : (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={styles.pillsRow}>
+                                    {filteredCategories.map((cat) => {
+                                        const isSelected = selectedCategoryId === cat.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={cat.id}
+                                                style={[
+                                                    styles.categoryPill,
+                                                    isSelected && { backgroundColor: cat.color, borderColor: cat.color }
+                                                ]}
+                                                onPress={() => setSelectedCategoryId(cat.id)}
+                                                activeOpacity={0.7}
+                                            >
+                                                {isSelected && (
+                                                    <Check size={16} color="#FFF" style={{ marginRight: 6 }} />
+                                                )}
+                                                <Typography
+                                                    variant="body"
+                                                    color={isSelected ? '#FFF' : theme.colors.text}
+                                                    style={styles.pillText}
+                                                >
+                                                    {cat.name}
+                                                </Typography>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </ScrollView>
+                        )}
                     </View>
 
                     {/* Account Selection */}
                     <View style={styles.section}>
                         <Typography variant="label" style={styles.sectionLabel}>Account</Typography>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <View style={styles.pillsRow}>
-                                {accounts.map((acc) => (
-                                    <TouchableOpacity
-                                        key={acc.id}
-                                        style={[
-                                            styles.accountPill,
-                                            selectedAccountId === acc.id && styles.accountPillActive
-                                        ]}
-                                        onPress={() => setSelectedAccountId(acc.id)}
-                                    >
-                                        <View style={[styles.accountDot, { backgroundColor: acc.color }]} />
-                                        <Typography
-                                            variant="body"
-                                            color={selectedAccountId === acc.id ? theme.colors.primary : theme.colors.text}
-                                            style={{ fontWeight: '500' }}
-                                        >
-                                            {acc.name}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </ScrollView>
+                        {accounts.length === 0 ? (
+                            <Card variant="flat" style={styles.emptyCategories}>
+                                <Typography variant="body" align="center" color={theme.colors.textMuted}>
+                                    No accounts available
+                                </Typography>
+                            </Card>
+                        ) : (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={styles.pillsRow}>
+                                    {accounts.map((acc) => {
+                                        const isSelected = selectedAccountId === acc.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={acc.id}
+                                                style={[
+                                                    styles.accountPill,
+                                                    isSelected && styles.accountPillActive
+                                                ]}
+                                                onPress={() => setSelectedAccountId(acc.id)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={[styles.accountDot, { backgroundColor: acc.color }]} />
+                                                <Typography
+                                                    variant="body"
+                                                    color={isSelected ? theme.colors.primary : theme.colors.text}
+                                                    style={styles.pillText}
+                                                >
+                                                    {acc.name}
+                                                </Typography>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </ScrollView>
+                        )}
                     </View>
 
                     {/* Note */}
@@ -210,15 +257,18 @@ export default function AddTransactionScreen() {
 
                     {/* Number Pad */}
                     <Card variant="flat" style={styles.numpad}>
-                        {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['.', '0', '⌫']].map((row, rowIndex) => (
+                        {numpadKeys.map((row, rowIndex) => (
                             <View key={rowIndex} style={styles.numpadRow}>
                                 {row.map((num) => (
                                     <TouchableOpacity
                                         key={num}
                                         style={styles.numpadButton}
                                         onPress={() => num === '⌫' ? handleBackspace() : handleNumberPress(num)}
+                                        activeOpacity={0.6}
                                     >
-                                        <Typography variant="h2" color={theme.colors.text}>{num}</Typography>
+                                        <View style={styles.numpadButtonInner}>
+                                            <Typography variant="h2" style={styles.numpadText}>{num}</Typography>
+                                        </View>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -228,12 +278,22 @@ export default function AddTransactionScreen() {
 
                 {/* Save Button */}
                 <View style={styles.footer}>
-                    <Button
-                        title="Save Transaction"
+                    <TouchableOpacity
+                        style={styles.saveButton}
                         onPress={handleSave}
-                        fullWidth
-                        size="lg"
-                    />
+                        activeOpacity={0.9}
+                    >
+                        <LinearGradient
+                            colors={type === 'expense' ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.saveButtonGradient}
+                        >
+                            <Typography variant="body" style={styles.saveButtonText}>
+                                Save {type === 'expense' ? 'Expense' : 'Income'}
+                            </Typography>
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -256,16 +316,18 @@ const styles = StyleSheet.create({
         paddingVertical: theme.spacing.md,
     },
     backButton: {
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: 22,
+        backgroundColor: theme.colors.surface,
     },
     magicButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: theme.colors.glass,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(168, 85, 247, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -278,31 +340,43 @@ const styles = StyleSheet.create({
     amountContainer: {
         alignItems: 'center',
         marginBottom: theme.spacing.xl,
+        paddingVertical: theme.spacing.lg,
+    },
+    amountLabel: {
+        marginBottom: theme.spacing.sm,
     },
     amountRow: {
         flexDirection: 'row',
         alignItems: 'flex-end',
         gap: 8,
-        marginTop: theme.spacing.sm,
+    },
+    currencySymbol: {
+        fontSize: 32,
+        color: theme.colors.textMuted,
+        marginBottom: 8,
     },
     amountText: {
-        fontSize: 56,
-        lineHeight: 64,
+        fontSize: 64,
+        lineHeight: 72,
+        fontWeight: '700',
     },
 
     // Type Toggle
     typeContainer: {
         flexDirection: 'row',
         backgroundColor: theme.colors.surfaceVariant,
-        borderRadius: 12,
-        padding: 4,
+        borderRadius: 16,
+        padding: 6,
         marginBottom: theme.spacing.xl,
     },
     typeButton: {
         flex: 1,
-        paddingVertical: 12,
-        borderRadius: 10,
+        paddingVertical: 14,
+        borderRadius: 12,
         alignItems: 'center',
+    },
+    typeButtonText: {
+        fontWeight: '600',
     },
     expenseActive: {
         backgroundColor: theme.colors.error,
@@ -320,61 +394,83 @@ const styles = StyleSheet.create({
     },
     pillsRow: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 10,
     },
     categoryPill: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 24,
         backgroundColor: theme.colors.surface,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: theme.colors.border,
+    },
+    pillText: {
+        fontWeight: '500',
     },
     accountPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
+        gap: 10,
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 24,
         backgroundColor: theme.colors.surface,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: theme.colors.border,
     },
     accountPillActive: {
         borderColor: theme.colors.primary,
-        backgroundColor: theme.colors.glass,
+        backgroundColor: 'rgba(59, 130, 246, 0.08)',
     },
     accountDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    emptyCategories: {
+        padding: theme.spacing.lg,
     },
 
     // Note
     noteInput: {
         backgroundColor: theme.colors.surface,
-        borderRadius: 12,
+        borderRadius: 16,
         padding: theme.spacing.md,
         fontSize: 16,
         color: theme.colors.text,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: theme.colors.border,
     },
 
     // Numpad
     numpad: {
         padding: theme.spacing.sm,
+        borderRadius: 24,
+        backgroundColor: theme.colors.surfaceVariant,
     },
     numpadRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
     },
     numpadButton: {
-        width: 72,
-        height: 56,
+        width: 80,
+        height: 64,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    numpadButtonInner: {
+        width: 64,
+        height: 52,
+        borderRadius: 16,
+        backgroundColor: theme.colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...theme.shadows.sm,
+    },
+    numpadText: {
+        fontWeight: '600',
     },
 
     // Footer
@@ -382,5 +478,19 @@ const styles = StyleSheet.create({
         padding: theme.spacing.lg,
         paddingBottom: theme.spacing.xl,
         backgroundColor: theme.colors.background,
+    },
+    saveButton: {
+        borderRadius: 16,
+        overflow: 'hidden',
+        ...theme.shadows.md,
+    },
+    saveButtonGradient: {
+        paddingVertical: 18,
+        alignItems: 'center',
+    },
+    saveButtonText: {
+        color: '#FFF',
+        fontWeight: '700',
+        fontSize: 17,
     },
 });

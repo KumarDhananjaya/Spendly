@@ -1,5 +1,7 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { PieChart, TrendingUp, Wallet } from 'lucide-react-native';
 import React from 'react';
-import { Dimensions, Modal, ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Modal, ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
@@ -8,6 +10,36 @@ import { theme } from '../../src/constants/theme';
 import { useFinanceStore } from '../../src/store/useFinanceStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+// Animated progress bar component
+const AnimatedProgressBar = ({ percentage, color }: { percentage: number; color: string }) => {
+    const animatedWidth = React.useRef(new Animated.Value(0)).current;
+
+    React.useEffect(() => {
+        Animated.timing(animatedWidth, {
+            toValue: percentage,
+            duration: 800,
+            useNativeDriver: false,
+        }).start();
+    }, [percentage]);
+
+    return (
+        <View style={styles.progressBarContainer}>
+            <Animated.View
+                style={[
+                    styles.progressBarFill,
+                    {
+                        width: animatedWidth.interpolate({
+                            inputRange: [0, 100],
+                            outputRange: ['0%', '100%'],
+                        }),
+                        backgroundColor: color,
+                    },
+                ]}
+            />
+        </View>
+    );
+};
 
 export default function AnalyticsScreen() {
     const { transactions, categories, currency, getExpenses, getEarnings, budgets, setBudget, getCategorySpent } = useFinanceStore();
@@ -18,6 +50,7 @@ export default function AnalyticsScreen() {
     const totalExpense = getExpenses();
     const totalEarning = getEarnings();
     const savings = totalEarning - totalExpense;
+    const savingsRate = totalEarning > 0 ? (savings / totalEarning) * 100 : 0;
 
     const catBreakdown = categories
         .filter(c => c.type === 'expense')
@@ -41,31 +74,53 @@ export default function AnalyticsScreen() {
                 {/* Summary Cards */}
                 <View style={styles.summaryRow}>
                     <Card style={styles.summaryCard}>
-                        <Typography variant="label">Income</Typography>
+                        <View style={[styles.summaryIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                            <TrendingUp size={20} color={theme.colors.secondary} />
+                        </View>
+                        <Typography variant="caption" style={styles.summaryLabel}>Income</Typography>
                         <Typography variant="h3" color={theme.colors.secondary}>
                             +{currency}{totalEarning.toLocaleString()}
                         </Typography>
                     </Card>
                     <Card style={styles.summaryCard}>
-                        <Typography variant="label">Expenses</Typography>
+                        <View style={[styles.summaryIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                            <Wallet size={20} color={theme.colors.error} />
+                        </View>
+                        <Typography variant="caption" style={styles.summaryLabel}>Expenses</Typography>
                         <Typography variant="h3" color={theme.colors.error}>
                             -{currency}{totalExpense.toLocaleString()}
                         </Typography>
                     </Card>
                 </View>
 
-                <Card style={[styles.savingsCard, { backgroundColor: savings >= 0 ? theme.colors.secondary : theme.colors.error }]}>
-                    <Typography variant="label" color="rgba(255,255,255,0.8)">Net Savings</Typography>
-                    <Typography variant="h1" color="#FFF">
+                {/* Net Savings Card */}
+                <LinearGradient
+                    colors={savings >= 0 ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.savingsCard}
+                >
+                    <View style={styles.savingsHeader}>
+                        <Typography variant="label" style={styles.savingsLabel}>Net Savings</Typography>
+                        <View style={styles.savingsRateBadge}>
+                            <Typography variant="caption" style={styles.savingsRateText}>
+                                {savingsRate >= 0 ? '+' : ''}{savingsRate.toFixed(0)}%
+                            </Typography>
+                        </View>
+                    </View>
+                    <Typography variant="h1" style={styles.savingsAmount}>
                         {savings >= 0 ? '+' : '-'}{currency}{Math.abs(savings).toLocaleString()}
                     </Typography>
-                </Card>
+                </LinearGradient>
 
                 {/* Spending Breakdown */}
                 <View style={styles.section}>
-                    <Typography variant="h3" style={styles.sectionTitle}>Spending Breakdown</Typography>
+                    <View style={styles.sectionHeader}>
+                        <PieChart size={20} color={theme.colors.text} />
+                        <Typography variant="h3" style={styles.sectionTitle}>Spending Breakdown</Typography>
+                    </View>
                     {catBreakdown.length > 0 ? (
-                        <Card>
+                        <Card style={styles.breakdownCard}>
                             {catBreakdown.map((item, index) => {
                                 const isLast = index === catBreakdown.length - 1;
                                 return (
@@ -73,29 +128,31 @@ export default function AnalyticsScreen() {
                                         <View style={styles.breakdownHeader}>
                                             <View style={styles.breakdownLeft}>
                                                 <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                                                <Typography variant="body" style={{ fontWeight: '500' }}>{item.name}</Typography>
+                                                <Typography variant="body" style={styles.breakdownName}>{item.name}</Typography>
                                             </View>
                                             <View style={styles.breakdownRight}>
                                                 <Typography variant="h3">{currency}{item.total.toLocaleString()}</Typography>
-                                                <Typography variant="caption">{item.percentage.toFixed(1)}%</Typography>
+                                                <View style={[styles.percentBadge, { backgroundColor: item.color + '20' }]}>
+                                                    <Typography variant="caption" style={{ color: item.color, fontWeight: '600' }}>
+                                                        {item.percentage.toFixed(1)}%
+                                                    </Typography>
+                                                </View>
                                             </View>
                                         </View>
-                                        <View style={styles.progressBarContainer}>
-                                            <View
-                                                style={[
-                                                    styles.progressBarFill,
-                                                    { width: `${item.percentage}%`, backgroundColor: item.color }
-                                                ]}
-                                            />
-                                        </View>
+                                        <AnimatedProgressBar percentage={item.percentage} color={item.color} />
                                     </View>
                                 );
                             })}
                         </Card>
                     ) : (
                         <Card variant="flat" style={styles.emptyState}>
-                            <Typography variant="body" align="center">No expense data yet</Typography>
-                            <Typography variant="caption" align="center" style={{ marginTop: 4 }}>
+                            <View style={styles.emptyIconContainer}>
+                                <PieChart size={40} color={theme.colors.textMuted} />
+                            </View>
+                            <Typography variant="h3" align="center" style={styles.emptyTitle}>
+                                No expense data yet
+                            </Typography>
+                            <Typography variant="caption" align="center" style={styles.emptySubtitle}>
                                 Add some transactions to see your spending breakdown
                             </Typography>
                         </Card>
@@ -104,42 +161,64 @@ export default function AnalyticsScreen() {
 
                 {/* Budgets */}
                 <View style={styles.section}>
-                    <Typography variant="h3" style={styles.sectionTitle}>Monthly Budgets</Typography>
-                    <Card>
-                        {categories.filter(c => c.type === 'expense').map((cat, index, arr) => {
-                            const budget = budgets.find(b => b.categoryId === cat.id);
-                            const spent = getCategorySpent(cat.id);
-                            const limit = budget?.amount || 0;
-                            const progress = limit > 0 ? Math.min(spent / limit, 1) : 0;
-                            const isOver = limit > 0 && spent > limit;
-                            const isLast = index === arr.length - 1;
+                    <View style={styles.sectionHeader}>
+                        <Wallet size={20} color={theme.colors.text} />
+                        <Typography variant="h3" style={styles.sectionTitle}>Monthly Budgets</Typography>
+                    </View>
+                    {categories.filter(c => c.type === 'expense').length > 0 ? (
+                        <Card style={styles.budgetCard}>
+                            {categories.filter(c => c.type === 'expense').map((cat, index, arr) => {
+                                const budget = budgets.find(b => b.categoryId === cat.id);
+                                const spent = getCategorySpent(cat.id);
+                                const limit = budget?.amount || 0;
+                                const progress = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+                                const isOver = limit > 0 && spent > limit;
+                                const isLast = index === arr.length - 1;
 
-                            return (
-                                <View key={cat.id} style={[styles.budgetItem, !isLast && styles.budgetBorder]}>
-                                    <View style={styles.budgetHeader}>
-                                        <Typography variant="body" style={{ fontWeight: '500' }}>{cat.name}</Typography>
-                                        <TouchableOpacity onPress={() => {
-                                            setSelectedBudgetCategoryId(cat.id);
-                                            setBudgetAmount(limit > 0 ? limit.toString() : '');
-                                        }}>
-                                            <Typography variant="caption" color={theme.colors.primary}>
-                                                {limit > 0 ? `${currency}${limit.toLocaleString()}` : 'Set Budget'}
+                                return (
+                                    <View key={cat.id} style={[styles.budgetItem, !isLast && styles.budgetBorder]}>
+                                        <View style={styles.budgetHeader}>
+                                            <View style={styles.budgetLeft}>
+                                                <View style={[styles.colorDot, { backgroundColor: cat.color }]} />
+                                                <Typography variant="body" style={styles.budgetName}>{cat.name}</Typography>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.setBudgetButton}
+                                                onPress={() => {
+                                                    setSelectedBudgetCategoryId(cat.id);
+                                                    setBudgetAmount(limit > 0 ? limit.toString() : '');
+                                                }}
+                                            >
+                                                <Typography variant="caption" color={theme.colors.primary} style={{ fontWeight: '600' }}>
+                                                    {limit > 0 ? `${currency}${limit.toLocaleString()}` : 'Set Budget'}
+                                                </Typography>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <AnimatedProgressBar
+                                            percentage={progress}
+                                            color={isOver ? theme.colors.error : cat.color}
+                                        />
+                                        <View style={styles.budgetFooter}>
+                                            <Typography variant="caption">
+                                                {currency}{spent.toLocaleString()} spent
                                             </Typography>
-                                        </TouchableOpacity>
+                                            {limit > 0 && (
+                                                <Typography variant="caption" color={isOver ? theme.colors.error : theme.colors.textMuted}>
+                                                    {isOver ? 'Over budget!' : `${currency}${(limit - spent).toLocaleString()} left`}
+                                                </Typography>
+                                            )}
+                                        </View>
                                     </View>
-                                    <View style={styles.progressBarContainer}>
-                                        <View style={[
-                                            styles.progressBarFill,
-                                            { width: `${progress * 100}%`, backgroundColor: isOver ? theme.colors.error : cat.color }
-                                        ]} />
-                                    </View>
-                                    <Typography variant="caption">
-                                        {currency}{spent.toLocaleString()} spent {limit > 0 ? `of ${currency}${limit.toLocaleString()}` : ''}
-                                    </Typography>
-                                </View>
-                            );
-                        })}
-                    </Card>
+                                );
+                            })}
+                        </Card>
+                    ) : (
+                        <Card variant="flat" style={styles.emptyState}>
+                            <Typography variant="body" align="center" color={theme.colors.textMuted}>
+                                Add expense categories to set budgets
+                            </Typography>
+                        </Card>
+                    )}
                 </View>
             </ScrollView>
 
@@ -153,18 +232,21 @@ export default function AnalyticsScreen() {
                 <View style={styles.modalOverlay}>
                     <Card style={styles.modalContent}>
                         <Typography variant="h3" align="center">Set Monthly Budget</Typography>
-                        <Typography variant="caption" align="center" style={{ marginTop: 4, marginBottom: 20 }}>
+                        <Typography variant="caption" align="center" style={styles.modalSubtitle}>
                             for {categories.find(c => c.id === selectedBudgetCategoryId)?.name}
                         </Typography>
 
-                        <TextInput
-                            style={styles.budgetInput}
-                            placeholder="Enter amount"
-                            placeholderTextColor={theme.colors.textMuted}
-                            keyboardType="numeric"
-                            value={budgetAmount}
-                            onChangeText={setBudgetAmount}
-                        />
+                        <View style={styles.budgetInputContainer}>
+                            <Typography variant="h2" color={theme.colors.textMuted}>{currency}</Typography>
+                            <TextInput
+                                style={styles.budgetInput}
+                                placeholder="0"
+                                placeholderTextColor={theme.colors.textMuted}
+                                keyboardType="numeric"
+                                value={budgetAmount}
+                                onChangeText={setBudgetAmount}
+                            />
+                        </View>
 
                         <View style={styles.modalButtons}>
                             <Button
@@ -203,6 +285,8 @@ const styles = StyleSheet.create({
     pageTitle: {
         marginBottom: theme.spacing.lg,
     },
+
+    // Summary Cards
     summaryRow: {
         flexDirection: 'row',
         gap: theme.spacing.md,
@@ -211,20 +295,72 @@ const styles = StyleSheet.create({
     summaryCard: {
         flex: 1,
         padding: theme.spacing.md,
+        borderRadius: 20,
     },
-    savingsCard: {
-        padding: theme.spacing.lg,
+    summaryIconBox: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         alignItems: 'center',
-        marginBottom: theme.spacing.xl,
+        justifyContent: 'center',
+        marginBottom: theme.spacing.sm,
     },
+    summaryLabel: {
+        marginBottom: 4,
+    },
+
+    // Savings Card
+    savingsCard: {
+        padding: theme.spacing.xl,
+        borderRadius: 24,
+        marginBottom: theme.spacing.xl,
+        ...theme.shadows.lg,
+    },
+    savingsHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing.sm,
+    },
+    savingsLabel: {
+        color: 'rgba(255,255,255,0.8)',
+    },
+    savingsRateBadge: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    savingsRateText: {
+        color: '#FFF',
+        fontWeight: '600',
+    },
+    savingsAmount: {
+        color: '#FFF',
+        fontSize: 40,
+        fontWeight: '700',
+    },
+
+    // Section
     section: {
         marginBottom: theme.spacing.xl,
     },
-    sectionTitle: {
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
         marginBottom: theme.spacing.md,
+    },
+    sectionTitle: {
+        flex: 1,
     },
 
     // Breakdown
+    breakdownCard: {
+        padding: 0,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
     breakdownItem: {
         padding: theme.spacing.md,
     },
@@ -236,7 +372,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 10,
     },
     breakdownLeft: {
         flexDirection: 'row',
@@ -244,25 +380,40 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     breakdownRight: {
-        alignItems: 'flex-end',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    breakdownName: {
+        fontWeight: '600',
     },
     colorDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+    },
+    percentBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     progressBarContainer: {
-        height: 8,
+        height: 10,
         backgroundColor: theme.colors.surfaceVariant,
-        borderRadius: 4,
+        borderRadius: 5,
         overflow: 'hidden',
     },
     progressBarFill: {
         height: '100%',
-        borderRadius: 4,
+        borderRadius: 5,
     },
 
     // Budget
+    budgetCard: {
+        padding: 0,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
     budgetItem: {
         padding: theme.spacing.md,
     },
@@ -274,12 +425,47 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 10,
+    },
+    budgetLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    budgetName: {
+        fontWeight: '600',
+    },
+    setBudgetButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    },
+    budgetFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 8,
     },
 
     // Empty state
     emptyState: {
-        padding: theme.spacing.xl,
+        padding: theme.spacing.xxl,
+        alignItems: 'center',
+    },
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: theme.colors.surfaceVariant,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: theme.spacing.lg,
+    },
+    emptyTitle: {
+        marginBottom: theme.spacing.sm,
+    },
+    emptySubtitle: {
+        color: theme.colors.textMuted,
     },
 
     // Modal
@@ -293,15 +479,28 @@ const styles = StyleSheet.create({
     modalContent: {
         width: '100%',
         padding: theme.spacing.xl,
+        borderRadius: 24,
+    },
+    modalSubtitle: {
+        marginTop: 4,
+        marginBottom: theme.spacing.lg,
+    },
+    budgetInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: theme.colors.surfaceVariant,
+        borderRadius: 16,
+        padding: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
     },
     budgetInput: {
-        backgroundColor: theme.colors.surfaceVariant,
-        borderRadius: 12,
-        padding: theme.spacing.md,
-        fontSize: 24,
-        textAlign: 'center',
+        fontSize: 32,
+        fontWeight: '700',
         color: theme.colors.text,
-        marginBottom: theme.spacing.lg,
+        textAlign: 'center',
+        minWidth: 100,
     },
     modalButtons: {
         flexDirection: 'row',
