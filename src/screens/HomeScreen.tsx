@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowDownLeft, ArrowUpRight, Globe } from 'lucide-react-native';
+import { ArrowDownLeft, ArrowUpRight, Globe, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../components/Button';
@@ -52,12 +52,21 @@ export default function HomeScreen() {
 
                 <View style={styles.sectionHeader}>
                     <Typography variant="h2">Recent Transactions</Typography>
-                    <Button
-                        title="Add"
-                        variant="glass"
-                        style={styles.addButton}
-                        onPress={() => router.push('/add-transaction')}
-                    />
+                    <View style={styles.sectionActions}>
+                        <TouchableOpacity
+                            style={styles.smartScanTrigger}
+                            onPress={() => router.push('/smart-scan')}
+                        >
+                            <Sparkles size={16} color={theme.colors.primary} />
+                            <Typography variant="caption" color={theme.colors.primary}>Smart Scan</Typography>
+                        </TouchableOpacity>
+                        <Button
+                            title="Add"
+                            variant="glass"
+                            style={styles.addButton}
+                            onPress={() => router.push('/add-transaction')}
+                        />
+                    </View>
                 </View>
 
                 {transactions.length === 0 ? (
@@ -180,8 +189,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: theme.spacing.md,
     },
+    sectionActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    smartScanTrigger: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(187, 134, 252, 0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(187, 134, 252, 0.2)',
+    },
     addButton: {
-        width: 80,
+        width: 70,
         height: 36,
     },
     transactionCard: {
