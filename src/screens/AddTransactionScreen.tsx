@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { Sparkles, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import * as React from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -19,15 +19,16 @@ import { theme } from '../constants/theme';
 import { TransactionType, useFinanceStore } from '../store/useFinanceStore';
 import { parseMessage } from '../utils/parser';
 
-const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Bills', 'Income', 'Others'];
+// Removed hardcoded CATEGORIES
 
 export default function AddTransactionScreen() {
-    const [amount, setAmount] = useState('0');
-    const [type, setType] = useState<TransactionType>('expense');
-    const [category, setCategory] = useState('Food');
-    const [note, setNote] = useState('');
+    const { addTransaction, currency, accounts, categories } = useFinanceStore();
+    const [amount, setAmount] = React.useState('0');
+    const [type, setType] = React.useState<TransactionType>('expense');
+    const [selectedCategoryId, setSelectedCategoryId] = React.useState(categories[0]?.id || '');
+    const [selectedAccountId, setSelectedAccountId] = React.useState(accounts[0]?.id || '');
+    const [note, setNote] = React.useState('');
     const router = useRouter();
-    const { addTransaction, currency } = useFinanceStore();
 
     const handleNumberPress = (num: string) => {
         if (amount === '0' && num !== '.') {
@@ -53,7 +54,8 @@ export default function AddTransactionScreen() {
         addTransaction({
             amount: numAmount,
             type,
-            category,
+            categoryId: selectedCategoryId,
+            accountId: selectedAccountId,
             note,
         });
         router.back();
@@ -67,7 +69,14 @@ export default function AddTransactionScreen() {
         if (result) {
             setAmount(result.amount.toString());
             setType(result.type);
-            setCategory(result.category);
+
+            // Try to find matching category by name
+            const matchedCat = categories.find(c =>
+                c.name.toLowerCase() === result.category.toLowerCase()
+            );
+            if (matchedCat) {
+                setSelectedCategoryId(matchedCat.id);
+            }
             setNote(text); // Keep original text in notes
         }
     };
@@ -118,16 +127,39 @@ export default function AddTransactionScreen() {
                     </View>
 
                     <View style={styles.section}>
-                        <Typography variant="caption" style={styles.sectionTitle}>Category</Typography>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-                            {CATEGORIES.map((cat) => (
+                        <Typography variant="caption" style={styles.sectionTitle}>Account</Typography>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                            {accounts.map((acc) => (
                                 <TouchableOpacity
-                                    key={cat}
-                                    style={[styles.categoryPill, category === cat && styles.activeCategory]}
-                                    onPress={() => setCategory(cat)}
+                                    key={acc.id}
+                                    style={[
+                                        styles.pill,
+                                        selectedAccountId === acc.id && { backgroundColor: acc.color }
+                                    ]}
+                                    onPress={() => setSelectedAccountId(acc.id)}
                                 >
-                                    <Typography variant="body" color={category === cat ? '#FFF' : theme.colors.textSecondary}>
-                                        {cat}
+                                    <Typography variant="body" color={selectedAccountId === acc.id ? '#FFF' : theme.colors.textSecondary}>
+                                        {acc.name}
+                                    </Typography>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+
+                    <View style={styles.section}>
+                        <Typography variant="caption" style={styles.sectionTitle}>Category</Typography>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                            {categories.filter(c => c.type === type).map((cat) => (
+                                <TouchableOpacity
+                                    key={cat.id}
+                                    style={[
+                                        styles.pill,
+                                        selectedCategoryId === cat.id && { backgroundColor: cat.color }
+                                    ]}
+                                    onPress={() => setSelectedCategoryId(cat.id)}
+                                >
+                                    <Typography variant="body" color={selectedCategoryId === cat.id ? '#FFF' : theme.colors.textSecondary}>
+                                        {cat.name}
                                     </Typography>
                                 </TouchableOpacity>
                             ))}
@@ -237,20 +269,17 @@ const styles = StyleSheet.create({
     sectionTitle: {
         marginBottom: theme.spacing.sm,
     },
-    categoryScroll: {
+    horizontalScroll: {
         flexDirection: 'row',
         marginHorizontal: -theme.spacing.lg,
         paddingHorizontal: theme.spacing.lg,
     },
-    categoryPill: {
+    pill: {
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 20,
         backgroundColor: theme.colors.surface,
         marginRight: theme.spacing.sm,
-    },
-    activeCategory: {
-        backgroundColor: theme.colors.primary,
     },
     noteCard: {
         padding: theme.spacing.sm,
