@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowDownLeft, ArrowUpRight, Globe, Sparkles } from 'lucide-react-native';
 import * as React from 'react';
+import { useState } from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -11,7 +12,7 @@ import { useFinanceStore } from '../store/useFinanceStore';
 export default function HomeScreen() {
     const { transactions, getBalance, getExpenses, getEarnings, currency, setCurrency, categories } = useFinanceStore();
     const router = useRouter();
-    const [isCurrencyModalVisible, setCurrencyModalVisible] = React.useState(false);
+    const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
 
     const commonCurrencies = ['₹', '$', '€', '£', '¥', '₿'];
 

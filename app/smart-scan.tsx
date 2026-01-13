@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
 import * as React from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
@@ -22,9 +23,9 @@ interface DetectedTx {
 
 export default function SmartScanScreen() {
     const router = useRouter();
-    const [inputText, setInputText] = React.useState('');
+    const [inputText, setInputText] = useState('');
     const { addTransaction, categories, accounts } = useFinanceStore();
-    const [detectedTxs, setDetectedTxs] = React.useState<DetectedTx[]>([]);
+    const [detectedTxs, setDetectedTxs] = useState<DetectedTx[]>([]);
 
     const handleParse = () => {
         const results = parseBulkMessages(inputText);
@@ -51,7 +52,7 @@ export default function SmartScanScreen() {
     };
 
     const toggleSelection = (index: number) => {
-        const newTxs = [...detectedTxs];
+        const newTxs: DetectedTx[] = [...detectedTxs];
         newTxs[index].selected = !newTxs[index].selected;
         setDetectedTxs(newTxs);
     };
@@ -94,7 +95,7 @@ export default function SmartScanScreen() {
                         <Typography variant="h3" style={styles.resultsTitle}>
                             Detected Transactions ({detectedTxs.length})
                         </Typography>
-                        {detectedTxs.map((tx, index) => (
+                        {detectedTxs.map((tx: DetectedTx, index: number) => (
                             <TouchableOpacity
                                 key={index}
                                 style={[styles.resultCard, !tx.selected && styles.dimmed]}
