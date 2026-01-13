@@ -14,7 +14,7 @@ export default function SmartScanScreen() {
     const router = useRouter();
     const [inputText, setInputText] = React.useState('');
     const { addTransaction, categories, accounts } = useFinanceStore();
-    const [detectedTxs, setDetectedTxs] = React.useState<any[]>([]);
+    const [detectedTxs, setDetectedTxs] = React.useState<DetectedTx[]>([]);
 
     const handleParse = () => {
         const results = parseBulkMessages(inputText);
@@ -22,13 +22,13 @@ export default function SmartScanScreen() {
             ...r,
             selected: true,
             accountId: accounts[0]?.id || '',
-            // Map parsed category to store category ID
-            categoryId: categories.find(c => c.name.toLowerCase() === r.category.toLowerCase())?.id || categories[0]?.id
+            // Map parsed category ID
+            categoryId: categories.find((c: Category) => c.name.toLowerCase() === r.category.toLowerCase())?.id || categories[0]?.id
         })));
     };
 
     const handleImport = () => {
-        detectedTxs.filter(t => t.selected).forEach(tx => {
+        detectedTxs.filter(t => t.selected).forEach((tx: DetectedTx) => {
             addTransaction({
                 amount: tx.amount,
                 type: tx.type,
