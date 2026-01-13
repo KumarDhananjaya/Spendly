@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { Sparkles, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -23,11 +23,11 @@ import { parseMessage } from '../utils/parser';
 
 export default function AddTransactionScreen() {
     const { addTransaction, currency, accounts, categories } = useFinanceStore();
-    const [amount, setAmount] = useState('0');
-    const [type, setType] = useState<TransactionType>('expense');
-    const [selectedCategoryId, setSelectedCategoryId] = useState(categories[0]?.id || '');
-    const [selectedAccountId, setSelectedAccountId] = useState(accounts[0]?.id || '');
-    const [note, setNote] = useState('');
+    const [amount, setAmount] = React.useState('0');
+    const [type, setType] = React.useState<TransactionType>('expense');
+    const [selectedCategoryId, setSelectedCategoryId] = React.useState(categories[0]?.id || '');
+    const [selectedAccountId, setSelectedAccountId] = React.useState(accounts[0]?.id || '');
+    const [note, setNote] = React.useState('');
     const router = useRouter();
 
     const handleNumberPress = (num: string) => {
