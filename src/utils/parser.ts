@@ -73,4 +73,3 @@ export const parseMessage = (text: string): ParsedTransaction | null => {
 
     return null;
 };
-```
