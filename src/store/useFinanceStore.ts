@@ -4,30 +4,68 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type TransactionType = 'expense' | 'earning';
 
+export interface Account {
+    id: string;
+    name: string;
+    type: 'bank' | 'cash' | 'upi' | 'card';
+    balance: number;
+    color: string;
+}
+
+export interface Category {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+    type: TransactionType;
+}
+
 export interface Transaction {
     id: string;
     amount: number;
     type: TransactionType;
-    category: string;
+    categoryId: string;
+    accountId: string;
     note: string;
     date: string;
 }
 
 interface FinanceState {
     transactions: Transaction[];
+    accounts: Account[];
+    categories: Category[];
     currency: string;
     addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
     deleteTransaction: (id: string) => void;
+    addAccount: (account: Omit<Account, 'id'>) => void;
+    updateAccountBalance: (id: string, amount: number) => void;
     setCurrency: (currency: string) => void;
     getBalance: () => number;
     getExpenses: () => number;
     getEarnings: () => number;
 }
 
+const DEFAULT_CATEGORIES: Category[] = [
+    { id: '1', name: 'Food', icon: 'Utensils', color: '#FF9500', type: 'expense' },
+    { id: '2', name: 'Transport', icon: 'Car', color: '#5856D6', type: 'expense' },
+    { id: '3', name: 'Shopping', icon: 'ShoppingBag', color: '#FF2D55', type: 'expense' },
+    { id: '4', name: 'Entertainment', icon: 'Gamepad2', color: '#AF52DE', type: 'expense' },
+    { id: '5', name: 'Health', icon: 'Heart', color: '#FF3B30', type: 'expense' },
+    { id: '6', name: 'Bills', icon: 'Receipt', color: '#007AFF', type: 'expense' },
+    { id: '7', name: 'Salary', icon: 'Briefcase', color: '#34C759', type: 'earning' },
+    { id: '8', name: 'Other', icon: 'MoreHorizontal', color: '#8E8E93', type: 'expense' },
+];
+
+const DEFAULT_ACCOUNTS: Account[] = [
+    { id: 'main-cash', name: 'Cash Wallet', type: 'cash', balance: 0, color: '#34C759' },
+];
+
 export const useFinanceStore = create<FinanceState>()(
     persist(
         (set, get) => ({
             transactions: [],
+            accounts: DEFAULT_ACCOUNTS,
+            categories: DEFAULT_CATEGORIES,
             currency: '₹',
             addTransaction: (tx) => {
                 const newTx: Transaction = {
@@ -35,12 +73,56 @@ export const useFinanceStore = create<FinanceState>()(
                     id: Math.random().toString(36).substring(7),
                     date: new Date().toISOString(),
                 };
-                set((state) => ({ transactions: [newTx, ...state.transactions] }));
+
+                // Update account balance
+                const accounts = get().accounts.map(acc => {
+                    if (acc.id === tx.accountId) {
+                        return {
+                            ...acc,
+                            balance: acc.balance + (tx.type === 'earning' ? tx.amount : -tx.amount)
+                        };
+                    }
+                    return acc;
+                });
+
+                set((state) => ({
+                    transactions: [newTx, ...state.transactions],
+                    accounts
+                }));
+            },
+            addAccount: (acc) => {
+                const newAcc: Account = {
+                    ...acc,
+                    id: Math.random().toString(36).substring(7),
+                };
+                set((state) => ({ accounts: [...state.accounts, newAcc] }));
+            },
+            updateAccountBalance: (id, amount) => {
+                set((state) => ({
+                    accounts: state.accounts.map(acc =>
+                        acc.id === id ? { ...acc, balance: acc.balance + amount } : acc
+                    )
+                }));
             },
             setCurrency: (currency) => set({ currency }),
             deleteTransaction: (id) => {
+                const txToDelete = get().transactions.find(t => t.id === id);
+                if (!txToDelete) return;
+
+                // Revert account balance
+                const accounts = get().accounts.map(acc => {
+                    if (acc.id === txToDelete.accountId) {
+                        return {
+                            ...acc,
+                            balance: acc.balance - (txToDelete.type === 'earning' ? txToDelete.amount : -txToDelete.amount)
+                        };
+                    }
+                    return acc;
+                });
+
                 set((state) => ({
                     transactions: state.transactions.filter((t) => t.id !== id),
+                    accounts
                 }));
             },
             getBalance: () => {
