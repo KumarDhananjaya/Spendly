@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import React from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { theme } from '../constants/theme';
@@ -6,46 +5,38 @@ import { theme } from '../constants/theme';
 interface CardProps {
     children?: React.ReactNode;
     style?: StyleProp<ViewStyle>;
-    variant?: 'elevated' | 'glass';
+    variant?: 'elevated' | 'outlined' | 'flat';
 }
 
-export const Card = ({ children, style, variant = 'glass' }: CardProps) => {
-    if (variant === 'glass') {
-        return (
-            <View style={[styles.container, style]}>
-                <BlurView intensity={20} tint="dark" style={styles.blur}>
-                    <View style={styles.content}>
-                        {children}
-                    </View>
-                </BlurView>
-            </View>
-        );
-    }
-
+export const Card = ({ children, style, variant = 'elevated' }: CardProps) => {
     return (
-        <View style={[styles.container, styles.elevated, style]}>
-            <View style={styles.content}>
-                {children}
-            </View>
+        <View style={[
+            styles.base,
+            variant === 'elevated' && styles.elevated,
+            variant === 'outlined' && styles.outlined,
+            variant === 'flat' && styles.flat,
+            style
+        ]}>
+            {children}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    base: {
         borderRadius: theme.roundness,
-        overflow: 'hidden',
-        backgroundColor: theme.colors.surface,
-    },
-    blur: {
         padding: theme.spacing.md,
-    },
-    content: {
-        flex: 1,
     },
     elevated: {
+        backgroundColor: theme.colors.surface,
+        ...theme.shadows.md,
+    },
+    outlined: {
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        padding: theme.spacing.md,
+    },
+    flat: {
+        backgroundColor: theme.colors.surfaceVariant,
     },
 });

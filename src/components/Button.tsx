@@ -1,124 +1,119 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import {
-    StyleProp,
-    StyleSheet,
-    TextStyle,
-    TouchableOpacity,
-    ViewStyle
-} from 'react-native';
+import { StyleProp, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { theme } from '../constants/theme';
-import { Typography } from './Typography';
 
 interface ButtonProps {
     title: string;
     onPress: () => void;
-    variant?: 'primary' | 'outline' | 'glass';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+    size?: 'sm' | 'md' | 'lg';
     style?: StyleProp<ViewStyle>;
-    textStyle?: StyleProp<TextStyle>;
     disabled?: boolean;
+    fullWidth?: boolean;
 }
 
 export const Button = ({
     title,
     onPress,
     variant = 'primary',
+    size = 'md',
     style,
-    textStyle,
-    disabled
+    disabled = false,
+    fullWidth = false,
 }: ButtonProps) => {
-    const isPrimary = variant === 'primary';
-    const isOutline = variant === 'outline';
-    const isGlass = variant === 'glass';
-
-    const Content = (
-        <Typography
-            variant="body"
-            style={[
-                styles.text,
-                isPrimary && styles.primaryText,
-                textStyle,
-                disabled && styles.disabledText
-            ]}
-        >
-            {title}
-        </Typography>
-    );
-
-    if (isPrimary && !disabled) {
-        return (
-            <TouchableOpacity
-                onPress={onPress}
-                activeOpacity={0.8}
-                style={[styles.container, style]}
-            >
-                <LinearGradient
-                    colors={theme.colors.gradient.primary as any}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.button}
-                >
-                    {Content}
-                </LinearGradient>
-            </TouchableOpacity>
-        );
-    }
-
     return (
         <TouchableOpacity
             onPress={onPress}
             disabled={disabled}
-            activeOpacity={0.7}
             style={[
-                styles.container,
-                styles.button,
-                isOutline && styles.outlineButton,
-                isGlass && styles.glassButton,
-                disabled && styles.disabledButton,
-                style
+                styles.base,
+                styles[variant],
+                styles[size],
+                fullWidth && styles.fullWidth,
+                disabled && styles.disabled,
+                style,
             ]}
+            activeOpacity={0.8}
         >
-            {Content}
+            <Text style={[
+                styles.text,
+                styles[`${variant}Text`],
+                styles[`${size}Text`],
+            ]}>
+                {title}
+            </Text>
         </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        borderRadius: theme.roundness,
-        overflow: 'hidden',
-        width: '100%',
-    },
-    button: {
-        height: 56,
+    base: {
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 24,
     },
-    primaryButton: {
-        backgroundColor: theme.colors.primary,
+    fullWidth: {
+        width: '100%',
     },
-    outlineButton: {
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: 'transparent',
-    },
-    glassButton: {
-        backgroundColor: theme.colors.glass,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-    },
-    disabledButton: {
+    disabled: {
         opacity: 0.5,
     },
+
+    // Variants
+    primary: {
+        backgroundColor: theme.colors.primary,
+        ...theme.shadows.md,
+    },
+    secondary: {
+        backgroundColor: theme.colors.secondary,
+        ...theme.shadows.md,
+    },
+    outline: {
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderColor: theme.colors.primary,
+    },
+    ghost: {
+        backgroundColor: theme.colors.glass,
+    },
+
+    // Sizes
+    sm: {
+        height: 36,
+        paddingHorizontal: 16,
+    },
+    md: {
+        height: 48,
+        paddingHorizontal: 24,
+    },
+    lg: {
+        height: 56,
+        paddingHorizontal: 32,
+    },
+
+    // Text styles
     text: {
         fontWeight: '600',
-        fontSize: 16,
     },
     primaryText: {
         color: '#FFFFFF',
     },
-    disabledText: {
-        opacity: 0.7,
+    secondaryText: {
+        color: '#FFFFFF',
+    },
+    outlineText: {
+        color: theme.colors.primary,
+    },
+    ghostText: {
+        color: theme.colors.primary,
+    },
+    smText: {
+        fontSize: 14,
+    },
+    mdText: {
+        fontSize: 16,
+    },
+    lgText: {
+        fontSize: 18,
     },
 });

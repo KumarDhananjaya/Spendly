@@ -1,8 +1,8 @@
-import * as React from 'react';
-import { Dimensions, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Dimensions, Modal, ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VictoryPie } from 'victory-native';
-import { Button } from '../../src/components/Button'; // Assuming Button component is available
+import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
 import { Typography } from '../../src/components/Typography';
 import { theme } from '../../src/constants/theme';
@@ -12,10 +12,9 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function AnalyticsScreen() {
     const { transactions, categories, currency, getExpenses, getEarnings, budgets, setBudget, getCategorySpent } = useFinanceStore();
-    const [selectedBudgetCategorId, setSelectedBudgetCategorId] = React.useState<string | null>(null);
+    const [selectedBudgetCategoryId, setSelectedBudgetCategoryId] = React.useState<string | null>(null);
     const [budgetAmount, setBudgetAmount] = React.useState('');
 
-    // Calculate category-wise breakdown for expenses
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
     const catBreakdown = categories
         .filter(c => c.type === 'expense')
@@ -33,56 +32,101 @@ export default function AnalyticsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.header}>
-                    <Typography variant="h1">Analytics</Typography>
-                </View>
+            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
 
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <Typography variant="h2" style={styles.pageTitle}>Analytics</Typography>
+
+                {/* Summary Cards */}
                 <View style={styles.summaryRow}>
                     <Card style={styles.summaryCard}>
-                        <Typography variant="caption">Earnings</Typography>
-                        <Typography variant="h3" color={theme.colors.secondary}>{currency}{totalEarning.toLocaleString()}</Typography>
+                        <Typography variant="label">Income</Typography>
+                        <Typography variant="h3" color={theme.colors.secondary}>
+                            +{currency}{totalEarning.toLocaleString()}
+                        </Typography>
                     </Card>
                     <Card style={styles.summaryCard}>
-                        <Typography variant="caption">Expenses</Typography>
-                        <Typography variant="h3" color={theme.colors.error}>{currency}{totalExpense.toLocaleString()}</Typography>
+                        <Typography variant="label">Expenses</Typography>
+                        <Typography variant="h3" color={theme.colors.error}>
+                            -{currency}{totalExpense.toLocaleString()}
+                        </Typography>
                     </Card>
                 </View>
 
-                <Card style={styles.savingsCard}>
-                    <Typography variant="caption">Net Savings</Typography>
-                    <Typography variant="h2" color={savings >= 0 ? theme.colors.primary : theme.colors.error}>
-                        {currency}{savings.toLocaleString()}
+                <Card style={[styles.savingsCard, { backgroundColor: savings >= 0 ? theme.colors.secondary : theme.colors.error }]}>
+                    <Typography variant="label" color="rgba(255,255,255,0.8)">Net Savings</Typography>
+                    <Typography variant="h1" color="#FFF">
+                        {currency}{Math.abs(savings).toLocaleString()}
                     </Typography>
                 </Card>
 
-                <View style={styles.chartSection}>
-                    <Typography variant="h2" style={styles.sectionTitle}>Budgeting</Typography>
-                    <Card style={styles.budgetCard}>
-                        {categories.filter(c => c.type === 'expense').map(cat => {
+                {/* Spending Chart */}
+                <View style={styles.section}>
+                    <Typography variant="h3" style={styles.sectionTitle}>Spending Breakdown</Typography>
+                    {catBreakdown.length > 0 ? (
+                        <Card style={styles.chartCard}>
+                            <VictoryPie
+                                data={catBreakdown}
+                                width={SCREEN_WIDTH - 80}
+                                height={220}
+                                colorScale={catBreakdown.map(d => d.color)}
+                                innerRadius={60}
+                                padAngle={2}
+                                style={{
+                                    labels: { fill: theme.colors.text, fontSize: 11, fontWeight: '500' }
+                                }}
+                            />
+                            <View style={styles.legendContainer}>
+                                {catBreakdown.map((item, index) => (
+                                    <View key={index} style={styles.legendItem}>
+                                        <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                                        <Typography variant="caption" style={{ flex: 1 }}>{item.x}</Typography>
+                                        <Typography variant="body" style={{ fontWeight: '600' }}>
+                                            {currency}{item.y.toLocaleString()}
+                                        </Typography>
+                                    </View>
+                                ))}
+                            </View>
+                        </Card>
+                    ) : (
+                        <Card variant="flat" style={styles.emptyState}>
+                            <Typography variant="body" align="center">No expense data yet</Typography>
+                        </Card>
+                    )}
+                </View>
+
+                {/* Budgets */}
+                <View style={styles.section}>
+                    <Typography variant="h3" style={styles.sectionTitle}>Monthly Budgets</Typography>
+                    <Card>
+                        {categories.filter(c => c.type === 'expense').map((cat, index, arr) => {
                             const budget = budgets.find(b => b.categoryId === cat.id);
                             const spent = getCategorySpent(cat.id);
                             const limit = budget?.amount || 0;
                             const progress = limit > 0 ? Math.min(spent / limit, 1) : 0;
                             const isOver = limit > 0 && spent > limit;
+                            const isLast = index === arr.length - 1;
 
                             return (
-                                <View key={cat.id} style={styles.budgetItem}>
-                                    <View style={styles.budgetInfo}>
-                                        <Typography variant="body">{cat.name}</Typography>
+                                <View key={cat.id} style={[styles.budgetItem, !isLast && styles.budgetBorder]}>
+                                    <View style={styles.budgetHeader}>
+                                        <Typography variant="body" style={{ fontWeight: '500' }}>{cat.name}</Typography>
                                         <TouchableOpacity onPress={() => {
-                                            setSelectedBudgetCategorId(cat.id);
+                                            setSelectedBudgetCategoryId(cat.id);
                                             setBudgetAmount(limit > 0 ? limit.toString() : '');
                                         }}>
                                             <Typography variant="caption" color={theme.colors.primary}>
-                                                {limit > 0 ? `${currency}${limit.toLocaleString()}` : 'Set Limit'}
+                                                {limit > 0 ? `${currency}${limit.toLocaleString()}` : 'Set Budget'}
                                             </Typography>
                                         </TouchableOpacity>
                                     </View>
-                                    <View style={styles.progressContainer}>
-                                        <View style={[styles.progressBar, { width: `${progress * 100}%`, backgroundColor: isOver ? theme.colors.error : cat.color }]} />
+                                    <View style={styles.progressBar}>
+                                        <View style={[
+                                            styles.progressFill,
+                                            { width: `${progress * 100}%`, backgroundColor: isOver ? theme.colors.error : cat.color }
+                                        ]} />
                                     </View>
-                                    <Typography variant="caption" style={styles.spentText}>
+                                    <Typography variant="caption">
                                         {currency}{spent.toLocaleString()} spent {limit > 0 ? `of ${currency}${limit.toLocaleString()}` : ''}
                                     </Typography>
                                 </View>
@@ -90,76 +134,44 @@ export default function AnalyticsScreen() {
                         })}
                     </Card>
                 </View>
-
-                <View style={styles.chartSection}>
-                    <Typography variant="h2" style={styles.sectionTitle}>Spending Breakdown</Typography>
-                    {catBreakdown.length > 0 ? (
-                        <View style={styles.chartContainer}>
-                            <VictoryPie
-                                data={catBreakdown}
-                                width={SCREEN_WIDTH - 40}
-                                height={300}
-                                colorScale={catBreakdown.map(d => d.color)}
-                                innerRadius={70}
-                                labelRadius={({ innerRadius }) => (typeof innerRadius === 'number' ? innerRadius + 20 : 80)}
-                                style={{
-                                    labels: { fill: "#FFF", fontSize: 12, fontWeight: "bold" }
-                                }}
-                            />
-                            <View style={styles.legendContainer}>
-                                {catBreakdown.map((item, index) => (
-                                    <View key={index} style={styles.legendItem}>
-                                        <View style={[styles.colorBox, { backgroundColor: item.color }]} />
-                                        <Typography variant="caption" style={{ flex: 1 }}>{item.x}</Typography>
-                                        <Typography variant="caption">{currency}{item.y.toLocaleString()}</Typography>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                    ) : (
-                        <View style={styles.emptyState}>
-                            <Typography variant="body">No expense data to analyze yet.</Typography>
-                        </View>
-                    )}
-                </View>
             </ScrollView>
 
+            {/* Budget Modal */}
             <Modal
-                visible={!!selectedBudgetCategorId}
+                visible={!!selectedBudgetCategoryId}
                 transparent
-                animationType="slide"
-                onRequestClose={() => setSelectedBudgetCategorId(null)}
+                animationType="fade"
+                onRequestClose={() => setSelectedBudgetCategoryId(null)}
             >
                 <View style={styles.modalOverlay}>
                     <Card style={styles.modalContent}>
-                        <Typography variant="h2">Set Monthly Budget</Typography>
-                        <Typography variant="caption" style={{ marginBottom: 16 }}>
-                            for {categories.find(c => c.id === selectedBudgetCategorId)?.name}
+                        <Typography variant="h3" align="center">Set Monthly Budget</Typography>
+                        <Typography variant="caption" align="center" style={{ marginTop: 4, marginBottom: 20 }}>
+                            for {categories.find(c => c.id === selectedBudgetCategoryId)?.name}
                         </Typography>
 
                         <TextInput
                             style={styles.budgetInput}
-                            placeholder="Amount"
-                            placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                            placeholder="Enter amount"
+                            placeholderTextColor={theme.colors.textMuted}
                             keyboardType="numeric"
                             value={budgetAmount}
                             onChangeText={setBudgetAmount}
-                            autoFocus
                         />
 
                         <View style={styles.modalButtons}>
                             <Button
                                 title="Cancel"
-                                variant="glass"
-                                onPress={() => setSelectedBudgetCategorId(null)}
+                                variant="ghost"
+                                onPress={() => setSelectedBudgetCategoryId(null)}
                                 style={{ flex: 1 }}
                             />
                             <Button
                                 title="Save"
                                 onPress={() => {
-                                    if (selectedBudgetCategorId) {
-                                        setBudget(selectedBudgetCategorId, parseFloat(budgetAmount) || 0);
-                                        setSelectedBudgetCategorId(null);
+                                    if (selectedBudgetCategoryId) {
+                                        setBudget(selectedBudgetCategoryId, parseFloat(budgetAmount) || 0);
+                                        setSelectedBudgetCategoryId(null);
                                     }
                                 }}
                                 style={{ flex: 1 }}
@@ -178,15 +190,15 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.background,
     },
     scrollContent: {
+        padding: theme.spacing.lg,
         paddingBottom: 100,
     },
-    header: {
-        padding: theme.spacing.lg,
+    pageTitle: {
+        marginBottom: theme.spacing.lg,
     },
     summaryRow: {
         flexDirection: 'row',
         gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
         marginBottom: theme.spacing.md,
     },
     summaryCard: {
@@ -194,78 +206,19 @@ const styles = StyleSheet.create({
         padding: theme.spacing.md,
     },
     savingsCard: {
-        marginHorizontal: theme.spacing.lg,
         padding: theme.spacing.lg,
         alignItems: 'center',
         marginBottom: theme.spacing.xl,
     },
-    chartSection: {
-        paddingHorizontal: theme.spacing.lg,
+    section: {
         marginBottom: theme.spacing.xl,
     },
     sectionTitle: {
         marginBottom: theme.spacing.md,
     },
-    budgetCard: {
+    chartCard: {
+        alignItems: 'center',
         padding: theme.spacing.md,
-    },
-    budgetItem: {
-        marginBottom: 20,
-    },
-    budgetInfo: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    progressContainer: {
-        height: 8,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-    progressBar: {
-        height: '100%',
-        borderRadius: 4,
-    },
-    spentText: {
-        marginTop: 4,
-        textAlign: 'right',
-        opacity: 0.6,
-    },
-    budgetInput: {
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 12,
-        padding: 16,
-        color: '#FFF',
-        fontSize: 24,
-        textAlign: 'center',
-        marginBottom: 24,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    chartContainer: {
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 20,
-        padding: theme.spacing.md,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
-    },
-    modalContent: {
-        width: '100%',
-        backgroundColor: theme.colors.surface,
-        borderRadius: theme.roundness,
-        padding: 24,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
     },
     legendContainer: {
         width: '100%',
@@ -274,16 +227,63 @@ const styles = StyleSheet.create({
     legendItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        paddingVertical: 8,
         gap: 12,
     },
-    colorBox: {
+    legendDot: {
         width: 12,
         height: 12,
-        borderRadius: 4,
+        borderRadius: 6,
     },
     emptyState: {
+        padding: theme.spacing.xl,
+    },
+    budgetItem: {
+        padding: theme.spacing.md,
+    },
+    budgetBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+    },
+    budgetHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 40,
+        marginBottom: 8,
+    },
+    progressBar: {
+        height: 6,
+        backgroundColor: theme.colors.surfaceVariant,
+        borderRadius: 3,
+        marginBottom: 8,
+        overflow: 'hidden',
+    },
+    progressFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: theme.spacing.lg,
+    },
+    modalContent: {
+        width: '100%',
+        padding: theme.spacing.xl,
+    },
+    budgetInput: {
+        backgroundColor: theme.colors.surfaceVariant,
+        borderRadius: 12,
+        padding: theme.spacing.md,
+        fontSize: 24,
+        textAlign: 'center',
+        color: theme.colors.text,
+        marginBottom: theme.spacing.lg,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
     },
 });

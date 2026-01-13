@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../src/components/Card';
 import { Typography } from '../../src/components/Typography';
@@ -26,7 +26,7 @@ export default function HistoryScreen() {
         if (dateFilter === 'today') {
             matchesDate = txDate.toDateString() === now.toDateString();
         } else if (dateFilter === 'week') {
-            const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7); // Corrected weekAgo calculation
+            const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
             matchesDate = txDate >= weekAgo;
         } else if (dateFilter === 'month') {
             matchesDate = txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
@@ -35,42 +35,57 @@ export default function HistoryScreen() {
         return matchesSearch && matchesType && matchesDate;
     });
 
+    const typeFilters = ['all', 'expense', 'earning'] as const;
+    const dateFilters = ['all', 'today', 'week', 'month'] as const;
+
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+
             <View style={styles.header}>
-                <Typography variant="h1">History</Typography>
+                <Typography variant="h2">Transaction History</Typography>
+
+                {/* Search Bar */}
                 <View style={styles.searchBar}>
-                    <Search size={20} color={theme.colors.textSecondary} />
+                    <Search size={18} color={theme.colors.textMuted} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search by note or category..."
-                        placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                        placeholder="Search transactions..."
+                        placeholderTextColor={theme.colors.textMuted}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
                 </View>
-                <View style={styles.filters}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-                        {(['all', 'expense', 'earning'] as const).map(t => (
+
+                {/* Filters */}
+                <View style={styles.filtersRow}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {typeFilters.map(t => (
                             <TouchableOpacity
                                 key={t}
-                                style={[styles.filterPill, selectedType === t && styles.activeFilter]}
+                                style={[styles.filterChip, selectedType === t && styles.filterChipActive]}
                                 onPress={() => setSelectedType(t)}
                             >
-                                <Typography variant="caption" color={selectedType === t ? '#FFF' : theme.colors.textSecondary}>
-                                    {t.toUpperCase()}
+                                <Typography
+                                    variant="caption"
+                                    color={selectedType === t ? '#FFF' : theme.colors.textSecondary}
+                                >
+                                    {t.charAt(0).toUpperCase() + t.slice(1)}
                                 </Typography>
                             </TouchableOpacity>
                         ))}
                         <View style={styles.filterDivider} />
-                        {(['all', 'today', 'week', 'month'] as const).map(d => (
+                        {dateFilters.map(d => (
                             <TouchableOpacity
                                 key={d}
-                                style={[styles.filterPill, dateFilter === d && styles.activeFilter]}
+                                style={[styles.filterChip, dateFilter === d && styles.filterChipActive]}
                                 onPress={() => setDateFilter(d)}
                             >
-                                <Typography variant="caption" color={dateFilter === d ? '#FFF' : theme.colors.textSecondary}>
-                                    {d.toUpperCase()}
+                                <Typography
+                                    variant="caption"
+                                    color={dateFilter === d ? '#FFF' : theme.colors.textSecondary}
+                                >
+                                    {d.charAt(0).toUpperCase() + d.slice(1)}
                                 </Typography>
                             </TouchableOpacity>
                         ))}
@@ -78,29 +93,51 @@ export default function HistoryScreen() {
                 </View>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {filteredTransactions.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Typography variant="body">No transactions found.</Typography>
-                    </View>
+                    <Card variant="flat" style={styles.emptyState}>
+                        <Typography variant="body" align="center">No transactions found</Typography>
+                    </Card>
                 ) : (
-                    filteredTransactions.map((tx) => {
-                        const category = categories.find(c => c.id === tx.categoryId);
-                        return (
-                            <Card key={tx.id} style={styles.transactionCard}>
-                                <View style={styles.txLeft}>
-                                    <Typography variant="h3">{category?.name || 'Other'}</Typography>
-                                    <Typography variant="caption">{new Date(tx.date).toLocaleDateString()} {new Date(tx.date).toLocaleTimeString()}</Typography>
+                    <Card>
+                        {filteredTransactions.map((tx, index) => {
+                            const category = categories.find(c => c.id === tx.categoryId);
+                            const isLast = index === filteredTransactions.length - 1;
+
+                            return (
+                                <View key={tx.id} style={[styles.transactionItem, !isLast && styles.transactionBorder]}>
+                                    <View style={[styles.categoryIcon, { backgroundColor: (category?.color || theme.colors.primary) + '20' }]}>
+                                        <Typography variant="h3">{category?.name?.charAt(0) || '?'}</Typography>
+                                    </View>
+                                    <View style={styles.transactionInfo}>
+                                        <Typography variant="body" style={{ fontWeight: '500', color: theme.colors.text }}>
+                                            {category?.name || 'Other'}
+                                        </Typography>
+                                        <Typography variant="caption">
+                                            {new Date(tx.date).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </Typography>
+                                        {tx.note && (
+                                            <Typography variant="caption" numberOfLines={1} style={{ marginTop: 2 }}>
+                                                {tx.note}
+                                            </Typography>
+                                        )}
+                                    </View>
+                                    <Typography
+                                        variant="h3"
+                                        color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
+                                    >
+                                        {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
+                                    </Typography>
                                 </View>
-                                <Typography
-                                    variant="h3"
-                                    color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
-                                >
-                                    {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
-                                </Typography>
-                            </Card>
-                        );
-                    })
+                            );
+                        })}
+                    </Card>
                 )}
             </ScrollView>
         </SafeAreaView>
@@ -114,61 +151,74 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
         borderRadius: 12,
-        paddingHorizontal: 12,
-        marginTop: theme.spacing.md,
-        marginBottom: theme.spacing.md,
-    },
-    filters: {
-        marginTop: theme.spacing.xs,
-    },
-    filterScroll: {
-        flexDirection: 'row',
-    },
-    filterPill: {
         paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        marginRight: 8,
-    },
-    activeFilter: {
-        backgroundColor: theme.colors.primary,
-    },
-    filterDivider: {
-        width: 1,
-        height: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        marginHorizontal: 8,
-        alignSelf: 'center',
+        marginTop: theme.spacing.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
     searchInput: {
         flex: 1,
-        height: 44,
-        color: '#FFF',
-        marginLeft: 8,
+        height: 48,
+        marginLeft: 12,
+        fontSize: 16,
+        color: theme.colors.text,
+    },
+    filtersRow: {
+        marginTop: theme.spacing.md,
+    },
+    filterChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: theme.colors.surface,
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    filterChipActive: {
+        backgroundColor: theme.colors.primary,
+        borderColor: theme.colors.primary,
+    },
+    filterDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: theme.colors.border,
+        marginHorizontal: 8,
+        alignSelf: 'center',
     },
     scrollContent: {
         padding: theme.spacing.lg,
-        paddingBottom: 100, // Extra space for tabs
+        paddingTop: 0,
+        paddingBottom: 100,
     },
-    transactionCard: {
+    transactionItem: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
         padding: theme.spacing.md,
-        marginBottom: theme.spacing.sm,
+        gap: 12,
     },
-    txLeft: {
-        gap: 2,
+    transactionBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+    },
+    categoryIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    transactionInfo: {
+        flex: 1,
     },
     emptyState: {
-        alignItems: 'center',
-        marginTop: 40,
+        padding: theme.spacing.xl,
     },
 });

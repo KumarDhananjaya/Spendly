@@ -1,25 +1,24 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { Sparkles, X } from 'lucide-react-native';
+import { ArrowLeft, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     ScrollView,
+    StatusBar,
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Typography } from '../components/Typography';
 import { theme } from '../constants/theme';
-import { TransactionType, useFinanceStore } from '../store/useFinanceStore';
+import { Category, TransactionType, useFinanceStore } from '../store/useFinanceStore';
 import { parseMessage } from '../utils/parser';
-
-// Removed hardcoded CATEGORIES
 
 export default function AddTransactionScreen() {
     const { addTransaction, currency, accounts, categories } = useFinanceStore();
@@ -30,20 +29,41 @@ export default function AddTransactionScreen() {
     const [note, setNote] = React.useState('');
     const router = useRouter();
 
+    const filteredCategories = categories.filter(c => c.type === type);
+
     const handleNumberPress = (num: string) => {
         if (amount === '0' && num !== '.') {
             setAmount(num);
+        } else if (num === '.' && amount.includes('.')) {
+            return;
         } else {
-            if (num === '.' && amount.includes('.')) return;
             setAmount(amount + num);
         }
     };
 
-    const handleDelete = () => {
-        if (amount.length > 1) {
-            setAmount(amount.slice(0, -1));
-        } else {
+    const handleBackspace = () => {
+        if (amount.length === 1) {
             setAmount('0');
+        } else {
+            setAmount(amount.slice(0, -1));
+        }
+    };
+
+    const handleMagicPaste = async () => {
+        const text = await Clipboard.getStringAsync();
+        if (text) {
+            const result = parseMessage(text);
+            if (result) {
+                setAmount(result.amount.toString());
+                setType(result.type);
+                const matchedCat = categories.find(
+                    (c: Category) => c.name.toLowerCase() === result.category.toLowerCase()
+                );
+                if (matchedCat) {
+                    setSelectedCategoryId(matchedCat.id);
+                }
+                setNote(text.substring(0, 50));
+            }
         }
     };
 
@@ -61,142 +81,160 @@ export default function AddTransactionScreen() {
         router.back();
     };
 
-    const handleMagicPaste = async () => {
-        const text = await Clipboard.getStringAsync();
-        if (!text) return;
-
-        const result = parseMessage(text);
-        if (result) {
-            setAmount(result.amount.toString());
-            setType(result.type);
-
-            // Try to find matching category by name
-            const matchedCat = categories.find(c =>
-                c.name.toLowerCase() === result.category.toLowerCase()
-            );
-            if (matchedCat) {
-                setSelectedCategoryId(matchedCat.id);
-            }
-            setNote(text); // Keep original text in notes
-        }
-    };
-
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
+                style={styles.keyboardView}
             >
+                {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-                        <X size={24} color={theme.colors.text} />
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <ArrowLeft size={24} color={theme.colors.text} />
                     </TouchableOpacity>
-                    <Typography variant="h2">Add Transaction</Typography>
-                    <View style={{ width: 40 }} />
+                    <Typography variant="h3">Add Transaction</Typography>
+                    <TouchableOpacity onPress={handleMagicPaste} style={styles.magicButton}>
+                        <Sparkles size={20} color={theme.colors.primary} />
+                    </TouchableOpacity>
                 </View>
 
-                <ScrollView style={styles.content}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Amount Display */}
                     <View style={styles.amountContainer}>
-                        <TouchableOpacity style={styles.magicButton} onPress={handleMagicPaste}>
-                            <Sparkles size={16} color={theme.colors.primary} />
-                            <Typography variant="caption" color={theme.colors.primary}>Magic Paste</Typography>
-                        </TouchableOpacity>
-                        <Typography variant="caption" style={{ marginTop: 8 }}>Amount</Typography>
-                        <Typography variant="h1" style={styles.amountText}>
-                            {currency}{amount}
-                        </Typography>
+                        <Typography variant="label">Amount</Typography>
+                        <View style={styles.amountRow}>
+                            <Typography variant="h1" color={theme.colors.textMuted}>{currency}</Typography>
+                            <Typography variant="h1" style={styles.amountText}>{amount}</Typography>
+                        </View>
                     </View>
 
-                    <View style={styles.typeSwitcher}>
+                    {/* Type Toggle */}
+                    <View style={styles.typeContainer}>
                         <TouchableOpacity
-                            style={[styles.typeButton, type === 'expense' && styles.activeExpense]}
+                            style={[styles.typeButton, type === 'expense' && styles.expenseActive]}
                             onPress={() => setType('expense')}
                         >
-                            <Typography variant="body" color={type === 'expense' ? '#FFF' : theme.colors.textSecondary}>
+                            <Typography
+                                variant="body"
+                                color={type === 'expense' ? '#FFF' : theme.colors.textSecondary}
+                                style={{ fontWeight: '600' }}
+                            >
                                 Expense
                             </Typography>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.typeButton, type === 'earning' && styles.activeEarning]}
+                            style={[styles.typeButton, type === 'earning' && styles.incomeActive]}
                             onPress={() => setType('earning')}
                         >
-                            <Typography variant="body" color={type === 'earning' ? '#FFF' : theme.colors.textSecondary}>
-                                Earning
+                            <Typography
+                                variant="body"
+                                color={type === 'earning' ? '#FFF' : theme.colors.textSecondary}
+                                style={{ fontWeight: '600' }}
+                            >
+                                Income
                             </Typography>
                         </TouchableOpacity>
                     </View>
 
+                    {/* Category Selection */}
                     <View style={styles.section}>
-                        <Typography variant="caption" style={styles.sectionTitle}>Account</Typography>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                            {accounts.map((acc) => (
-                                <TouchableOpacity
-                                    key={acc.id}
-                                    style={[
-                                        styles.pill,
-                                        selectedAccountId === acc.id && { backgroundColor: acc.color }
-                                    ]}
-                                    onPress={() => setSelectedAccountId(acc.id)}
-                                >
-                                    <Typography variant="body" color={selectedAccountId === acc.id ? '#FFF' : theme.colors.textSecondary}>
-                                        {acc.name}
-                                    </Typography>
-                                </TouchableOpacity>
-                            ))}
+                        <Typography variant="label" style={styles.sectionLabel}>Category</Typography>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View style={styles.pillsRow}>
+                                {filteredCategories.map((cat) => (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        style={[
+                                            styles.categoryPill,
+                                            selectedCategoryId === cat.id && { backgroundColor: cat.color }
+                                        ]}
+                                        onPress={() => setSelectedCategoryId(cat.id)}
+                                    >
+                                        <Typography
+                                            variant="body"
+                                            color={selectedCategoryId === cat.id ? '#FFF' : theme.colors.text}
+                                            style={{ fontWeight: '500' }}
+                                        >
+                                            {cat.name}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </ScrollView>
                     </View>
 
+                    {/* Account Selection */}
                     <View style={styles.section}>
-                        <Typography variant="caption" style={styles.sectionTitle}>Category</Typography>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                            {categories.filter(c => c.type === type).map((cat) => (
-                                <TouchableOpacity
-                                    key={cat.id}
-                                    style={[
-                                        styles.pill,
-                                        selectedCategoryId === cat.id && { backgroundColor: cat.color }
-                                    ]}
-                                    onPress={() => setSelectedCategoryId(cat.id)}
-                                >
-                                    <Typography variant="body" color={selectedCategoryId === cat.id ? '#FFF' : theme.colors.textSecondary}>
-                                        {cat.name}
-                                    </Typography>
-                                </TouchableOpacity>
-                            ))}
+                        <Typography variant="label" style={styles.sectionLabel}>Account</Typography>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View style={styles.pillsRow}>
+                                {accounts.map((acc) => (
+                                    <TouchableOpacity
+                                        key={acc.id}
+                                        style={[
+                                            styles.accountPill,
+                                            selectedAccountId === acc.id && styles.accountPillActive
+                                        ]}
+                                        onPress={() => setSelectedAccountId(acc.id)}
+                                    >
+                                        <View style={[styles.accountDot, { backgroundColor: acc.color }]} />
+                                        <Typography
+                                            variant="body"
+                                            color={selectedAccountId === acc.id ? theme.colors.primary : theme.colors.text}
+                                            style={{ fontWeight: '500' }}
+                                        >
+                                            {acc.name}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </ScrollView>
                     </View>
 
+                    {/* Note */}
                     <View style={styles.section}>
-                        <Typography variant="caption" style={styles.sectionTitle}>Notes</Typography>
-                        <Card style={styles.noteCard}>
-                            <TextInput
-                                style={styles.noteInput}
-                                placeholder="What for?"
-                                placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                                value={note}
-                                onChangeText={setNote}
-                            />
-                        </Card>
+                        <Typography variant="label" style={styles.sectionLabel}>Note (Optional)</Typography>
+                        <TextInput
+                            style={styles.noteInput}
+                            placeholder="Add a note..."
+                            placeholderTextColor={theme.colors.textMuted}
+                            value={note}
+                            onChangeText={setNote}
+                        />
                     </View>
 
-                    <View style={styles.numpad}>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, 'DEL'].map((val) => (
-                            <TouchableOpacity
-                                key={val}
-                                style={styles.numpadButton}
-                                onPress={() => val === 'DEL' ? handleDelete() : handleNumberPress(val.toString())}
-                            >
-                                <Typography variant="h2">{val}</Typography>
-                            </TouchableOpacity>
+                    {/* Number Pad */}
+                    <Card variant="flat" style={styles.numpad}>
+                        {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['.', '0', '⌫']].map((row, rowIndex) => (
+                            <View key={rowIndex} style={styles.numpadRow}>
+                                {row.map((num) => (
+                                    <TouchableOpacity
+                                        key={num}
+                                        style={styles.numpadButton}
+                                        onPress={() => num === '⌫' ? handleBackspace() : handleNumberPress(num)}
+                                    >
+                                        <Typography variant="h2" color={theme.colors.text}>{num}</Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         ))}
-                    </View>
+                    </Card>
+                </ScrollView>
 
+                {/* Save Button */}
+                <View style={styles.footer}>
                     <Button
                         title="Save Transaction"
                         onPress={handleSave}
-                        style={styles.saveButton}
+                        fullWidth
+                        size="lg"
                     />
-                </ScrollView>
+                </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -207,6 +245,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    keyboardView: {
+        flex: 1,
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -214,97 +255,132 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.lg,
         paddingVertical: theme.spacing.md,
     },
-    closeButton: {
+    backButton: {
         width: 40,
         height: 40,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.lg,
+    magicButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: theme.colors.glass,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
+    scrollContent: {
+        padding: theme.spacing.lg,
+        paddingBottom: 100,
+    },
+
+    // Amount
     amountContainer: {
         alignItems: 'center',
-        marginVertical: theme.spacing.lg,
+        marginBottom: theme.spacing.xl,
     },
-    magicButton: {
+    amountRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        backgroundColor: 'rgba(187, 134, 252, 0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(187, 134, 252, 0.2)',
+        alignItems: 'flex-end',
+        gap: 8,
+        marginTop: theme.spacing.sm,
     },
     amountText: {
-        fontSize: 48,
-        marginTop: 4,
+        fontSize: 56,
+        lineHeight: 64,
     },
-    typeSwitcher: {
+
+    // Type Toggle
+    typeContainer: {
         flexDirection: 'row',
-        backgroundColor: theme.colors.surface,
-        borderRadius: theme.roundness,
+        backgroundColor: theme.colors.surfaceVariant,
+        borderRadius: 12,
         padding: 4,
         marginBottom: theme.spacing.xl,
     },
     typeButton: {
         flex: 1,
-        height: 44,
+        paddingVertical: 12,
+        borderRadius: 10,
         alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: theme.roundness - 4,
     },
-    activeExpense: {
+    expenseActive: {
         backgroundColor: theme.colors.error,
     },
-    activeEarning: {
+    incomeActive: {
         backgroundColor: theme.colors.secondary,
     },
+
+    // Sections
     section: {
-        marginBottom: theme.spacing.xl,
+        marginBottom: theme.spacing.lg,
     },
-    sectionTitle: {
+    sectionLabel: {
         marginBottom: theme.spacing.sm,
     },
-    horizontalScroll: {
+    pillsRow: {
         flexDirection: 'row',
-        marginHorizontal: -theme.spacing.lg,
-        paddingHorizontal: theme.spacing.lg,
+        gap: 8,
     },
-    pill: {
-        paddingHorizontal: 20,
+    categoryPill: {
+        paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 20,
         backgroundColor: theme.colors.surface,
-        marginRight: theme.spacing.sm,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
-    noteCard: {
+    accountPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    accountPillActive: {
+        borderColor: theme.colors.primary,
+        backgroundColor: theme.colors.glass,
+    },
+    accountDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+
+    // Note
+    noteInput: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: theme.spacing.md,
+        fontSize: 16,
+        color: theme.colors.text,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+
+    // Numpad
+    numpad: {
         padding: theme.spacing.sm,
     },
-    noteInput: {
-        color: '#FFF',
-        fontSize: 16,
-        padding: 8,
-    },
-    numpad: {
+    numpadRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginBottom: theme.spacing.xl,
+        justifyContent: 'space-around',
     },
     numpadButton: {
-        width: '30%',
-        height: 60,
+        width: 72,
+        height: 56,
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 4,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
     },
-    saveButton: {
-        marginBottom: 40,
-    }
+
+    // Footer
+    footer: {
+        padding: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
+        backgroundColor: theme.colors.background,
+    },
 });
