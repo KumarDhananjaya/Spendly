@@ -20,6 +20,12 @@ export interface Category {
     type: TransactionType;
 }
 
+export interface Budget {
+    categoryId: string;
+    amount: number;
+    period: 'monthly';
+}
+
 export interface Transaction {
     id: string;
     amount: number;
@@ -34,12 +40,15 @@ interface FinanceState {
     transactions: Transaction[];
     accounts: Account[];
     categories: Category[];
+    budgets: Budget[];
     currency: string;
     addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
     deleteTransaction: (id: string) => void;
     addAccount: (account: Omit<Account, 'id'>) => void;
     updateAccountBalance: (id: string, amount: number) => void;
     setCurrency: (currency: string) => void;
+    setBudget: (categoryId: string, amount: number) => void;
+    getCategorySpent: (categoryId: string) => number;
     getBalance: () => number;
     getExpenses: () => number;
     getEarnings: () => number;
@@ -66,6 +75,7 @@ export const useFinanceStore = create<FinanceState>()(
             transactions: [],
             accounts: DEFAULT_ACCOUNTS,
             categories: DEFAULT_CATEGORIES,
+            budgets: [],
             currency: '₹',
             addTransaction: (tx) => {
                 const newTx: Transaction = {
@@ -105,6 +115,27 @@ export const useFinanceStore = create<FinanceState>()(
                 }));
             },
             setCurrency: (currency) => set({ currency }),
+            setBudget: (categoryId, amount) => {
+                set((state) => {
+                    const existing = state.budgets.find(b => b.categoryId === categoryId);
+                    if (existing) {
+                        return {
+                            budgets: state.budgets.map(b => b.categoryId === categoryId ? { ...b, amount } : b)
+                        };
+                    }
+                    return {
+                        budgets: [...state.budgets, { categoryId, amount, period: 'monthly' }]
+                    };
+                });
+            },
+            getCategorySpent: (categoryId) => {
+                const now = new Date();
+                return get().transactions
+                    .filter(t => t.categoryId === categoryId &&
+                        new Date(t.date).getMonth() === now.getMonth() &&
+                        new Date(t.date).getFullYear() === now.getFullYear())
+                    .reduce((acc, t) => acc + t.amount, 0);
+            },
             deleteTransaction: (id) => {
                 const txToDelete = get().transactions.find(t => t.id === id);
                 if (!txToDelete) return;
