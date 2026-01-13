@@ -3,12 +3,12 @@ import { ArrowLeft, Lock, Shield } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
-import { Typography } from '../components/Typography';
-import { theme } from '../constants/theme';
-import { useFinanceStore } from '../store/useFinanceStore';
-import { savePin } from '../utils/security';
+import { Button } from '../src/components/Button';
+import { Card } from '../src/components/Card';
+import { Typography } from '../src/components/Typography';
+import { theme } from '../src/constants/theme';
+import { useFinanceStore } from '../src/store/useFinanceStore';
+import { savePin } from '../src/utils/security';
 
 export default function SecuritySettings() {
     const router = useRouter();
