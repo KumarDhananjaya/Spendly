@@ -145,6 +145,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: theme.spacing.lg,
+        paddingBottom: 100,
     },
     header: {
         alignItems: 'center',
@@ -226,9 +227,14 @@ const styles = StyleSheet.create({
     },
     fabContainer: {
         position: 'absolute',
-        bottom: 32,
-        right: 32,
+        bottom: 90,
+        right: 24,
         width: 64,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
     fab: {
         width: 64,
