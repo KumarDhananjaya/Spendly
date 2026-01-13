@@ -9,7 +9,7 @@ import { theme } from '../constants/theme';
 import { useFinanceStore } from '../store/useFinanceStore';
 
 export default function HomeScreen() {
-    const { transactions, getBalance, getExpenses, getEarnings, currency, setCurrency } = useFinanceStore();
+    const { transactions, getBalance, getExpenses, getEarnings, currency, setCurrency, categories } = useFinanceStore();
     const router = useRouter();
     const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
 
@@ -65,20 +65,23 @@ export default function HomeScreen() {
                         <Typography variant="body">No transactions yet.</Typography>
                     </View>
                 ) : (
-                    transactions.map((tx) => (
-                        <Card key={tx.id} style={styles.transactionCard}>
-                            <View style={styles.txLeft}>
-                                <Typography variant="h3">{tx.category}</Typography>
-                                <Typography variant="caption">{new Date(tx.date).toLocaleDateString()}</Typography>
-                            </View>
-                            <Typography
-                                variant="h3"
-                                color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
-                            >
-                                {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
-                            </Typography>
-                        </Card>
-                    ))
+                    transactions.map((tx) => {
+                        const category = categories.find(c => c.id === tx.categoryId);
+                        return (
+                            <Card key={tx.id} style={styles.transactionCard}>
+                                <View style={styles.txLeft}>
+                                    <Typography variant="h3">{category?.name || 'Other'}</Typography>
+                                    <Typography variant="caption">{new Date(tx.date).toLocaleDateString()}</Typography>
+                                </View>
+                                <Typography
+                                    variant="h3"
+                                    color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
+                                >
+                                    {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
+                                </Typography>
+                            </Card>
+                        );
+                    })
                 )}
             </ScrollView>
 
