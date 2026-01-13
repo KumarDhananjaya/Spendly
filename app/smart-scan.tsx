@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
-import * as React from 'react';
-import { useState } from 'react';
+import React from 'react';
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
@@ -23,9 +22,9 @@ interface DetectedTx {
 
 export default function SmartScanScreen() {
     const router = useRouter();
-    const [inputText, setInputText] = useState('');
+    const [inputText, setInputText] = React.useState('');
     const { addTransaction, categories, accounts } = useFinanceStore();
-    const [detectedTxs, setDetectedTxs] = useState<DetectedTx[]>([]);
+    const [detectedTxs, setDetectedTxs] = React.useState<DetectedTx[]>([]);
 
     const handleParse = () => {
         const results = parseBulkMessages(inputText);
@@ -39,7 +38,7 @@ export default function SmartScanScreen() {
     };
 
     const handleImport = () => {
-        detectedTxs.filter(t => t.selected).forEach((tx: DetectedTx) => {
+        detectedTxs.filter((t: DetectedTx) => t.selected).forEach((tx: DetectedTx) => {
             addTransaction({
                 amount: tx.amount,
                 type: tx.type,
