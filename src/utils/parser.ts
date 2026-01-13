@@ -7,15 +7,53 @@ interface ParsedTransaction {
 }
 
 export const parseMessage = (text: string): ParsedTransaction | null => {
-    // Regex to match "Spent 100 on Food" or "Received 500 for Salary"
-    // Format 1: Spent [amount] on [category]
-    // Format 2: Received [amount] for [category]
+    const cleanText = text.replace(/,/g, ''); // Remove commas from numbers
 
-    const amountRegex = /(\d+(?:\.\d{1,2})?)/;
+    // Pattern 1: Debit/Spent Format (Common for Indian Banks)
+    // Example: "HDFC Bank: Rs 500.00 debited from a/c x1234 for Amazon on 20-Oct-23. Bal: Rs 1000"
+    // Example: "SBI: Your a/c x1234 has been debited by Rs 100.00 on 20/10/23 ref 12345. Bal: Rs 500"
+    const debitRegex = /(?:rs|inr)\.?\s*(\d+(?:\.\d{1,2})?)\s*(?:debited|spent|paid|withdrawn|used)\s*(?:from|at)?\s*(?:a\/c|acc|account)?\s*(?:[xX\d]+)?\s*(?:for|at)?\s*([\w\s]+)?/i;
+
+    // Pattern 2: Credit/Received Format
+    // Example: "A/c x1234 credited with Rs 1000.00 on 20-Oct-23 by Salary. Bal: Rs 2000"
+    const creditRegex = /(?:rs|inr)\.?\s*(\d+(?:\.\d{1,2})?)\s*(?:credited|received|added|deposited)\s*(?:in|to)?\s*(?:a\/c|acc|account)?/i;
+
+    // Pattern 3: UPI Transaction
+    // Example: "Money Transferred: Rs 200.00 via UPI from SBI a/c x1234 to Zomato on 20-Oct-23."
+    const upiRegex = /UPI\s+(?:transfer|payment)?\s*(?:of)?\s*(?:rs|inr)\.?\s*(\d+(?:\.\d{1,2})?)\s*(?:from|to)?\s*([\w\s]+)?/i;
+
+    let match = cleanText.match(debitRegex);
+    if (match) {
+        return {
+            amount: parseFloat(match[1]),
+            type: 'expense',
+            category: match[2]?.trim() || 'Shopping',
+        };
+    }
+
+    match = cleanText.match(upiRegex);
+    if (match) {
+        return {
+            amount: parseFloat(match[1]),
+            type: 'expense',
+            category: match[2]?.trim() || 'Others',
+        };
+    }
+
+    match = cleanText.match(creditRegex);
+    if (match) {
+        return {
+            amount: parseFloat(match[1]),
+            type: 'earning',
+            category: 'Income',
+        };
+    }
+
+    // Fallback to simpler patterns
     const expenseRegex = /(?:spent|paid|buy|bought)\s+(\d+(?:\.\d{1,2})?)\s+(?:at|on|for)\s+(\w+)/i;
     const earningRegex = /(?:received|salary|got|earned)\s+(\d+(?:\.\d{1,2})?)\s+(?:from|for)\s+(\w+)/i;
 
-    let match = text.match(expenseRegex);
+    match = cleanText.match(expenseRegex);
     if (match) {
         return {
             amount: parseFloat(match[1]),
@@ -24,7 +62,7 @@ export const parseMessage = (text: string): ParsedTransaction | null => {
         };
     }
 
-    match = text.match(earningRegex);
+    match = cleanText.match(earningRegex);
     if (match) {
         return {
             amount: parseFloat(match[1]),
@@ -33,15 +71,6 @@ export const parseMessage = (text: string): ParsedTransaction | null => {
         };
     }
 
-    // Fallback: search for any number
-    const simpleMatch = text.match(amountRegex);
-    if (simpleMatch) {
-        return {
-            amount: parseFloat(simpleMatch[1]),
-            type: 'expense',
-            category: 'Others',
-        };
-    }
-
     return null;
 };
+```
