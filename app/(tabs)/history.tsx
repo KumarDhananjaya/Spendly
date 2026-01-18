@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
@@ -8,6 +9,7 @@ import { theme } from '../../src/constants/theme';
 import { useFinanceStore } from '../../src/store/useFinanceStore';
 
 export default function HistoryScreen() {
+    const router = useRouter();
     const { transactions, categories, currency } = useFinanceStore();
     const [searchQuery, setSearchQuery] = React.useState('');
     const [selectedType, setSelectedType] = React.useState<'all' | 'expense' | 'earning'>('all');
@@ -105,7 +107,15 @@ export default function HistoryScreen() {
                             const isLast = index === filteredTransactions.length - 1;
 
                             return (
-                                <View key={tx.id} style={[styles.transactionItem, !isLast && styles.transactionBorder]}>
+                                <TouchableOpacity
+                                    key={tx.id}
+                                    style={[styles.transactionItem, !isLast && styles.transactionBorder]}
+                                    onPress={() => router.push({
+                                        pathname: '/edit-transaction',
+                                        params: { id: tx.id }
+                                    })}
+                                    activeOpacity={0.6}
+                                >
                                     <View style={[styles.categoryIcon, { backgroundColor: (category?.color || theme.colors.primary) + '20' }]}>
                                         <Typography variant="h3">{category?.name?.charAt(0) || '?'}</Typography>
                                     </View>
@@ -134,7 +144,7 @@ export default function HistoryScreen() {
                                     >
                                         {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
                                     </Typography>
-                                </View>
+                                </TouchableOpacity>
                             );
                         })}
                     </Card>

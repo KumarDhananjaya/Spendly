@@ -1,9 +1,9 @@
-import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Check, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Check, CopyPlus, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import {
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -17,29 +17,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../components/Card';
 import { Typography } from '../components/Typography';
 import { theme } from '../constants/theme';
-import { Category, TransactionType, useFinanceStore } from '../store/useFinanceStore';
-import { parseMessage } from '../utils/parser';
+import { TransactionType, useFinanceStore } from '../store/useFinanceStore';
 
-export default function AddTransactionScreen() {
-    const { addTransaction, currency, accounts, categories } = useFinanceStore();
-    const { type: initialType } = useLocalSearchParams<{ type: TransactionType }>();
-    const [amount, setAmount] = React.useState('0');
-    const [type, setType] = React.useState<TransactionType>(initialType || 'expense');
-    const [selectedCategoryId, setSelectedCategoryId] = React.useState(categories[0]?.id || '');
-    const [selectedAccountId, setSelectedAccountId] = React.useState(accounts[0]?.id || '');
-    const [selectedToAccountId, setSelectedToAccountId] = React.useState(accounts[1]?.id || accounts[0]?.id || '');
-    const [note, setNote] = React.useState('');
+export default function EditTransactionScreen() {
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const { transactions, updateTransaction, deleteTransaction, currency, accounts, categories } = useFinanceStore();
     const router = useRouter();
 
-    const filteredCategories = categories.filter(c => c.type === type);
+    const transaction = transactions.find(t => t.id === id);
 
-    // Update selected category when type changes
+    const [amount, setAmount] = React.useState(transaction?.amount.toString() || '0');
+    const [type, setType] = React.useState<TransactionType>(transaction?.type || 'expense');
+    const [selectedCategoryId, setSelectedCategoryId] = React.useState(transaction?.categoryId || '');
+    const [selectedAccountId, setSelectedAccountId] = React.useState(transaction?.accountId || '');
+    const [selectedToAccountId, setSelectedToAccountId] = React.useState(transaction?.toAccountId || accounts[1]?.id || accounts[0]?.id || '');
+    const [note, setNote] = React.useState(transaction?.note || '');
+
     React.useEffect(() => {
-        const firstCat = categories.find(c => c.type === type);
-        if (firstCat) {
-            setSelectedCategoryId(firstCat.id);
+        if (!transaction) {
+            router.back();
         }
-    }, [type, categories]);
+    }, [transaction]);
+
+    const filteredCategories = categories.filter(c => c.type === type);
 
     const handleNumberPress = (num: string) => {
         if (amount === '0' && num !== '.') {
@@ -59,34 +59,17 @@ export default function AddTransactionScreen() {
         }
     };
 
-    const handleMagicPaste = async () => {
-        const text = await Clipboard.getStringAsync();
-        if (text) {
-            const result = parseMessage(text);
-            if (result) {
-                setAmount(result.amount.toString());
-                setType(result.type);
-                const matchedCat = categories.find(
-                    (c: Category) => c.name.toLowerCase() === result.category.toLowerCase()
-                );
-                if (matchedCat) {
-                    setSelectedCategoryId(matchedCat.id);
-                }
-                setNote(text.substring(0, 50));
-            }
-        }
-    };
-
     const handleSave = () => {
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount <= 0) return;
+        if (!id) return;
 
         if (type === 'transfer' && selectedAccountId === selectedToAccountId) {
-            alert('Source and destination accounts must be different');
+            Alert.alert('Error', 'Source and destination accounts must be different');
             return;
         }
 
-        addTransaction({
+        updateTransaction(id, {
             amount: numAmount,
             type,
             categoryId: type === 'transfer' ? 'transfer' : selectedCategoryId,
@@ -97,12 +80,51 @@ export default function AddTransactionScreen() {
         router.back();
     };
 
+    const handleDuplicate = () => {
+        const numAmount = parseFloat(amount);
+        if (isNaN(numAmount) || numAmount <= 0) return;
+
+        const { addTransaction } = useFinanceStore.getState();
+        addTransaction({
+            amount: numAmount,
+            type,
+            categoryId: type === 'transfer' ? 'transfer' : selectedCategoryId,
+            accountId: selectedAccountId,
+            toAccountId: type === 'transfer' ? selectedToAccountId : undefined,
+            note: `${note} (Copy)`,
+        });
+        Alert.alert('Success', 'Transaction duplicated');
+        router.back();
+    };
+
+    const handleDelete = () => {
+        Alert.alert(
+            'Delete Transaction',
+            'Are you sure you want to delete this transaction?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                        if (id) {
+                            deleteTransaction(id);
+                            router.back();
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const numpadKeys = [
         ['1', '2', '3'],
         ['4', '5', '6'],
         ['7', '8', '9'],
         ['.', '0', '⌫']
     ];
+
+    if (!transaction) return null;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -117,10 +139,15 @@ export default function AddTransactionScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <ArrowLeft size={24} color={theme.colors.text} />
                     </TouchableOpacity>
-                    <Typography variant="h3">Add Transaction</Typography>
-                    <TouchableOpacity onPress={handleMagicPaste} style={styles.magicButton}>
-                        <Sparkles size={20} color="#A855F7" />
-                    </TouchableOpacity>
+                    <Typography variant="h3">Edit Transaction</Typography>
+                    <View style={styles.headerRight}>
+                        <TouchableOpacity onPress={handleDuplicate} style={styles.duplicateButton}>
+                            <CopyPlus size={22} color={theme.colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+                            <Trash2 size={22} color={theme.colors.error} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <ScrollView
@@ -183,46 +210,35 @@ export default function AddTransactionScreen() {
                     {type !== 'transfer' && (
                         <View style={styles.section}>
                             <Typography variant="label" style={styles.sectionLabel}>Category</Typography>
-                            {filteredCategories.length === 0 ? (
-                                <Card variant="flat" style={styles.emptyCategories}>
-                                    <Typography variant="body" align="center" color={theme.colors.textMuted}>
-                                        No categories available
-                                    </Typography>
-                                    <Typography variant="caption" align="center" style={{ marginTop: 4 }}>
-                                        Add categories in Settings → Data
-                                    </Typography>
-                                </Card>
-                            ) : (
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                    <View style={styles.pillsRow}>
-                                        {filteredCategories.map((cat) => {
-                                            const isSelected = selectedCategoryId === cat.id;
-                                            return (
-                                                <TouchableOpacity
-                                                    key={cat.id}
-                                                    style={[
-                                                        styles.categoryPill,
-                                                        isSelected && { backgroundColor: cat.color, borderColor: cat.color }
-                                                    ]}
-                                                    onPress={() => setSelectedCategoryId(cat.id)}
-                                                    activeOpacity={0.7}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={styles.pillsRow}>
+                                    {filteredCategories.map((cat) => {
+                                        const isSelected = selectedCategoryId === cat.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={cat.id}
+                                                style={[
+                                                    styles.categoryPill,
+                                                    isSelected && { backgroundColor: cat.color, borderColor: cat.color }
+                                                ]}
+                                                onPress={() => setSelectedCategoryId(cat.id)}
+                                                activeOpacity={0.7}
+                                            >
+                                                {isSelected && (
+                                                    <Check size={16} color="#FFF" style={{ marginRight: 6 }} />
+                                                )}
+                                                <Typography
+                                                    variant="body"
+                                                    color={isSelected ? '#FFF' : theme.colors.text}
+                                                    style={styles.pillText}
                                                 >
-                                                    {isSelected && (
-                                                        <Check size={16} color="#FFF" style={{ marginRight: 6 }} />
-                                                    )}
-                                                    <Typography
-                                                        variant="body"
-                                                        color={isSelected ? '#FFF' : theme.colors.text}
-                                                        style={styles.pillText}
-                                                    >
-                                                        {cat.name}
-                                                    </Typography>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </View>
-                                </ScrollView>
-                            )}
+                                                    {cat.name}
+                                                </Typography>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </ScrollView>
                         </View>
                     )}
 
@@ -299,7 +315,7 @@ export default function AddTransactionScreen() {
                         <Typography variant="label" style={styles.sectionLabel}>Note (Optional)</Typography>
                         <TextInput
                             style={styles.noteInput}
-                            placeholder="Add a note..."
+                            placeholder="Update note..."
                             placeholderTextColor={theme.colors.textMuted}
                             value={note}
                             onChangeText={setNote}
@@ -345,8 +361,7 @@ export default function AddTransactionScreen() {
                             style={styles.saveButtonGradient}
                         >
                             <Typography variant="body" style={styles.saveButtonText}>
-                                {type === 'expense' ? 'Save Expense' :
-                                    type === 'earning' ? 'Save Income' : 'Transfer Money'}
+                                {type === 'transfer' ? 'Save Transfer' : 'Save Changes'}
                             </Typography>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -379,20 +394,30 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         backgroundColor: theme.colors.surface,
     },
-    magicButton: {
+    duplicateButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    deleteButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        gap: 8,
     },
     scrollContent: {
         padding: theme.spacing.lg,
         paddingBottom: 100,
     },
-
-    // Amount
     amountContainer: {
         alignItems: 'center',
         marginBottom: theme.spacing.xl,
@@ -416,8 +441,6 @@ const styles = StyleSheet.create({
         lineHeight: 72,
         fontWeight: '700',
     },
-
-    // Type Toggle
     typeContainer: {
         flexDirection: 'row',
         backgroundColor: theme.colors.surfaceVariant,
@@ -443,8 +466,6 @@ const styles = StyleSheet.create({
     transferActive: {
         backgroundColor: theme.colors.primary,
     },
-
-    // Sections
     section: {
         marginBottom: theme.spacing.lg,
     },
@@ -488,11 +509,6 @@ const styles = StyleSheet.create({
         height: 10,
         borderRadius: 5,
     },
-    emptyCategories: {
-        padding: theme.spacing.lg,
-    },
-
-    // Note
     noteInput: {
         backgroundColor: theme.colors.surface,
         borderRadius: 16,
@@ -502,8 +518,6 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: theme.colors.border,
     },
-
-    // Numpad
     numpad: {
         padding: theme.spacing.sm,
         borderRadius: 24,
@@ -531,8 +545,6 @@ const styles = StyleSheet.create({
     numpadText: {
         fontWeight: '600',
     },
-
-    // Footer
     footer: {
         padding: theme.spacing.lg,
         paddingBottom: theme.spacing.xl,
