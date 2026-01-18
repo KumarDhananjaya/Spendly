@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type TransactionType = 'expense' | 'earning';
+export type TransactionType = 'expense' | 'earning' | 'transfer';
 
 export interface Account {
     id: string;
@@ -32,6 +32,7 @@ export interface Transaction {
     type: TransactionType;
     categoryId: string;
     accountId: string;
+    toAccountId?: string; // Only for transfers
     note: string;
     date: string;
     isRecurring?: boolean;
@@ -46,6 +47,7 @@ interface FinanceState {
     isAppLockEnabled: boolean;
     isScreenCaptureBlocked: boolean;
     addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
+    updateTransaction: (id: string, transaction: Omit<Transaction, 'id' | 'date'>) => void;
     deleteTransaction: (id: string) => void;
     addAccount: (account: Omit<Account, 'id'>) => void;
     updateAccountBalance: (id: string, amount: number) => void;
@@ -96,16 +98,62 @@ export const useFinanceStore = create<FinanceState>()(
                 // Update account balance
                 const accounts = get().accounts.map(acc => {
                     if (acc.id === tx.accountId) {
-                        return {
-                            ...acc,
-                            balance: acc.balance + (tx.type === 'earning' ? tx.amount : -tx.amount)
-                        };
+                        // For transfers, this is the source (deduct)
+                        // For earnings, add. For expenses, deduct.
+                        let delta = 0;
+                        if (tx.type === 'earning') delta = tx.amount;
+                        else delta = -tx.amount; // expense OR transfer source
+                        return { ...acc, balance: acc.balance + delta };
+                    }
+                    if (tx.type === 'transfer' && acc.id === tx.toAccountId) {
+                        // This is the destination (add)
+                        return { ...acc, balance: acc.balance + tx.amount };
                     }
                     return acc;
                 });
 
                 set((state) => ({
                     transactions: [newTx, ...state.transactions],
+                    accounts
+                }));
+            },
+            updateTransaction: (id, tx) => {
+                const txs = get().transactions;
+                const oldTx = txs.find(t => t.id === id);
+                if (!oldTx) return;
+
+                // 1. Revert old account balance
+                let accounts = get().accounts.map(acc => {
+                    if (acc.id === oldTx.accountId) {
+                        let delta = 0;
+                        if (oldTx.type === 'earning') delta = -oldTx.amount;
+                        else delta = oldTx.amount; // revert expense OR transfer source
+                        return { ...acc, balance: acc.balance + delta };
+                    }
+                    if (oldTx.type === 'transfer' && acc.id === oldTx.toAccountId) {
+                        // revert destination (subtract)
+                        return { ...acc, balance: acc.balance - oldTx.amount };
+                    }
+                    return acc;
+                });
+
+                // 2. Apply new account balance
+                accounts = accounts.map(acc => {
+                    if (acc.id === tx.accountId) {
+                        let delta = 0;
+                        if (tx.type === 'earning') delta = tx.amount;
+                        else delta = -tx.amount; // expense OR transfer source
+                        return { ...acc, balance: acc.balance + delta };
+                    }
+                    if (tx.type === 'transfer' && acc.id === tx.toAccountId) {
+                        // Apply destination (add)
+                        return { ...acc, balance: acc.balance + tx.amount };
+                    }
+                    return acc;
+                });
+
+                set((state) => ({
+                    transactions: state.transactions.map(t => t.id === id ? { ...t, ...tx } : t),
                     accounts
                 }));
             },
@@ -167,10 +215,14 @@ export const useFinanceStore = create<FinanceState>()(
                 // Revert account balance
                 const accounts = get().accounts.map(acc => {
                     if (acc.id === txToDelete.accountId) {
-                        return {
-                            ...acc,
-                            balance: acc.balance - (txToDelete.type === 'earning' ? txToDelete.amount : -txToDelete.amount)
-                        };
+                        let delta = 0;
+                        if (txToDelete.type === 'earning') delta = -txToDelete.amount;
+                        else delta = txToDelete.amount; // revert expense OR transfer source
+                        return { ...acc, balance: acc.balance + delta };
+                    }
+                    if (txToDelete.type === 'transfer' && acc.id === txToDelete.toAccountId) {
+                        // revert destination (subtract)
+                        return { ...acc, balance: acc.balance - txToDelete.amount };
                     }
                     return acc;
                 });
