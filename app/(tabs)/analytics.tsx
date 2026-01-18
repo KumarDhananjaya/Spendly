@@ -93,6 +93,53 @@ export default function AnalyticsScreen() {
                     </Card>
                 </View>
 
+                {/* Spending Trends Chart */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <TrendingUp size={20} color={theme.colors.text} />
+                        <Typography variant="h3" style={styles.sectionTitle}>Financial Trends</Typography>
+                    </View>
+                    <Card style={styles.chartCard}>
+                        <View style={styles.chartHeader}>
+                            <View style={styles.chartLegend}>
+                                <View style={[styles.legendDot, { backgroundColor: theme.colors.secondary }]} />
+                                <Typography variant="caption">Income</Typography>
+                                <View style={[styles.legendDot, { backgroundColor: theme.colors.error, marginLeft: 12 }]} />
+                                <Typography variant="caption">Expense</Typography>
+                            </View>
+                            <Typography variant="caption" color={theme.colors.textSecondary}>Last 6 Months</Typography>
+                        </View>
+                        {/* Static stylized SVG Chart for premium look */}
+                        <View style={styles.svgContainer}>
+                            <View style={styles.yAxis}>
+                                <Typography variant="caption" style={styles.axisText}>100%</Typography>
+                                <Typography variant="caption" style={styles.axisText}>50%</Typography>
+                                <Typography variant="caption" style={styles.axisText}>0%</Typography>
+                            </View>
+                            <View style={styles.chartMain}>
+                                {/* Grid Lines */}
+                                <View style={styles.gridLine} />
+                                <View style={styles.gridLine} />
+                                <View style={styles.gridLine} />
+
+                                <View style={styles.barsRow}>
+                                    {[0.8, 0.6, 0.9, 0.5, 0.7, 1.0].map((h, i) => (
+                                        <View key={i} style={styles.barGroup}>
+                                            <View style={[styles.bar, { height: `${h * 70}%`, backgroundColor: theme.colors.secondary + '40' }]} />
+                                            <View style={[styles.bar, { height: `${(h * 0.6) * 70}%`, backgroundColor: theme.colors.error + '40' }]} />
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        </View>
+                        <View style={styles.xAxis}>
+                            {['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
+                                <Typography key={m} variant="caption" style={styles.axisText}>{m}</Typography>
+                            ))}
+                        </View>
+                    </Card>
+                </View>
+
                 {/* Net Savings Card */}
                 <LinearGradient
                     colors={savings >= 0 ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
@@ -307,6 +354,76 @@ const styles = StyleSheet.create({
     },
     summaryLabel: {
         marginBottom: 4,
+    },
+
+    // Chart
+    chartCard: {
+        padding: theme.spacing.lg,
+        borderRadius: 24,
+    },
+    chartHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    chartLegend: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    legendDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
+    },
+    svgContainer: {
+        flexDirection: 'row',
+        height: 150,
+        gap: 12,
+    },
+    yAxis: {
+        justifyContent: 'space-between',
+        paddingVertical: 4,
+    },
+    gridLine: {
+        height: 1,
+        backgroundColor: theme.colors.border,
+        width: '100%',
+        position: 'absolute',
+        left: 0,
+        right: 0,
+    },
+    chartMain: {
+        flex: 1,
+        height: '100%',
+        justifyContent: 'space-between',
+    },
+    barsRow: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+    },
+    barGroup: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: 4,
+    },
+    bar: {
+        width: 10,
+        borderRadius: 5,
+    },
+    xAxis: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingLeft: 38,
+        marginTop: 12,
+    },
+    axisText: {
+        fontSize: 10,
+        color: theme.colors.textMuted,
     },
 
     // Savings Card
