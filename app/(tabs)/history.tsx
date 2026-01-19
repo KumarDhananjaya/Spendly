@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Search } from 'lucide-react-native';
+import { ArrowLeftRight, Search } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -120,7 +120,7 @@ export default function HistoryScreen() {
                                 >
                                     <View style={[styles.categoryIcon, { backgroundColor: tx.type === 'transfer' ? theme.colors.primary + '20' : (category?.color || theme.colors.primary) + '20' }]}>
                                         {tx.type === 'transfer' ? (
-                                            <Typography variant="body" style={{ fontWeight: '700', color: theme.colors.primary }}>T</Typography>
+                                            <ArrowLeftRight size={20} color={theme.colors.primary} />
                                         ) : (
                                             <Typography variant="h3">{category?.name?.charAt(0) || '?'}</Typography>
                                         )}
