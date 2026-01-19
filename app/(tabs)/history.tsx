@@ -10,14 +10,16 @@ import { useFinanceStore } from '../../src/store/useFinanceStore';
 
 export default function HistoryScreen() {
     const router = useRouter();
-    const { transactions, categories, currency } = useFinanceStore();
+    const { transactions, categories, currency, accounts } = useFinanceStore();
     const [searchQuery, setSearchQuery] = React.useState('');
-    const [selectedType, setSelectedType] = React.useState<'all' | 'expense' | 'earning'>('all');
+    const [selectedType, setSelectedType] = React.useState<'all' | 'expense' | 'earning' | 'transfer'>('all');
     const [dateFilter, setDateFilter] = React.useState<'all' | 'today' | 'week' | 'month'>('all');
 
     const filteredTransactions = transactions.filter(tx => {
         const matchesSearch = tx.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            categories.find(c => c.id === tx.categoryId)?.name.toLowerCase().includes(searchQuery.toLowerCase());
+            categories.find(c => c.id === tx.categoryId)?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            accounts.find(a => a.id === tx.accountId)?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            accounts.find(a => a.id === tx.toAccountId)?.name.toLowerCase().includes(searchQuery.toLowerCase());
 
         const matchesType = selectedType === 'all' || tx.type === selectedType;
 
@@ -37,7 +39,7 @@ export default function HistoryScreen() {
         return matchesSearch && matchesType && matchesDate;
     });
 
-    const typeFilters = ['all', 'expense', 'earning'] as const;
+    const typeFilters = ['all', 'expense', 'earning', 'transfer'] as const;
     const dateFilters = ['all', 'today', 'week', 'month'] as const;
 
     return (
@@ -116,12 +118,20 @@ export default function HistoryScreen() {
                                     })}
                                     activeOpacity={0.6}
                                 >
-                                    <View style={[styles.categoryIcon, { backgroundColor: (category?.color || theme.colors.primary) + '20' }]}>
-                                        <Typography variant="h3">{category?.name?.charAt(0) || '?'}</Typography>
+                                    <View style={[styles.categoryIcon, { backgroundColor: tx.type === 'transfer' ? theme.colors.primary + '20' : (category?.color || theme.colors.primary) + '20' }]}>
+                                        {tx.type === 'transfer' ? (
+                                            <Typography variant="body" style={{ fontWeight: '700', color: theme.colors.primary }}>T</Typography>
+                                        ) : (
+                                            <Typography variant="h3">{category?.name?.charAt(0) || '?'}</Typography>
+                                        )}
                                     </View>
                                     <View style={styles.transactionInfo}>
                                         <Typography variant="body" style={{ fontWeight: '500', color: theme.colors.text }}>
-                                            {category?.name || 'Other'}
+                                            {tx.type === 'transfer' ? (
+                                                `Transfer: ${accounts.find(a => a.id === tx.accountId)?.name || 'Source'} → ${accounts.find(a => a.id === tx.toAccountId)?.name || 'Dest'}`
+                                            ) : (
+                                                category?.name || 'Other'
+                                            )}
                                         </Typography>
                                         <Typography variant="caption">
                                             {new Date(tx.date).toLocaleDateString('en-US', {
@@ -140,9 +150,9 @@ export default function HistoryScreen() {
                                     </View>
                                     <Typography
                                         variant="h3"
-                                        color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
+                                        color={tx.type === 'earning' ? theme.colors.secondary : tx.type === 'transfer' ? theme.colors.primary : theme.colors.error}
                                     >
-                                        {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
+                                        {tx.type === 'earning' ? '+' : tx.type === 'transfer' ? '' : '-'}{currency}{tx.amount.toLocaleString()}
                                     </Typography>
                                 </TouchableOpacity>
                             );
