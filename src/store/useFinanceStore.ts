@@ -234,7 +234,9 @@ export const useFinanceStore = create<FinanceState>()(
             },
             getBalance: () => {
                 const txs = get().transactions;
-                return txs.reduce((acc, t) => acc + (t.type === 'earning' ? t.amount : -t.amount), 0);
+                return txs
+                    .filter(t => t.type !== 'transfer')
+                    .reduce((acc, t) => acc + (t.type === 'earning' ? t.amount : -t.amount), 0);
             },
             getExpenses: () => {
                 const txs = get().transactions;
