@@ -217,14 +217,22 @@ export default function HomeScreen() {
 
                             return (
                                 <View key={tx.id} style={[styles.transactionItem, !isLast && styles.transactionBorder]}>
-                                    <View style={[styles.categoryIcon, { backgroundColor: (category?.color || theme.colors.primary) + '20' }]}>
-                                        <Typography variant="body" style={{ fontWeight: '700', color: category?.color || theme.colors.primary }}>
-                                            {category?.name?.charAt(0).toUpperCase() || '?'}
-                                        </Typography>
+                                    <View style={[styles.categoryIcon, { backgroundColor: tx.type === 'transfer' ? theme.colors.primary + '20' : (category?.color || theme.colors.primary) + '20' }]}>
+                                        {tx.type === 'transfer' ? (
+                                            <ArrowLeftRight size={20} color={theme.colors.primary} />
+                                        ) : (
+                                            <Typography variant="body" style={{ fontWeight: '700', color: category?.color || theme.colors.primary }}>
+                                                {category?.name?.charAt(0).toUpperCase() || '?'}
+                                            </Typography>
+                                        )}
                                     </View>
                                     <View style={styles.transactionInfo}>
                                         <Typography variant="body" style={styles.transactionCategory}>
-                                            {category?.name || 'Other'}
+                                            {tx.type === 'transfer' ? (
+                                                `Transfer: ${accounts.find(a => a.id === tx.accountId)?.name || 'Source'} → ${accounts.find(a => a.id === tx.toAccountId)?.name || 'Dest'}`
+                                            ) : (
+                                                category?.name || 'Other'
+                                            )}
                                         </Typography>
                                         <Typography variant="caption">
                                             {new Date(tx.date).toLocaleDateString('en-US', {
@@ -237,9 +245,9 @@ export default function HomeScreen() {
                                     </View>
                                     <Typography
                                         variant="h3"
-                                        color={tx.type === 'earning' ? theme.colors.secondary : theme.colors.error}
+                                        color={tx.type === 'earning' ? theme.colors.secondary : tx.type === 'transfer' ? theme.colors.primary : theme.colors.error}
                                     >
-                                        {tx.type === 'earning' ? '+' : '-'}{currency}{tx.amount.toLocaleString()}
+                                        {tx.type === 'earning' ? '+' : tx.type === 'transfer' ? '' : '-'}{currency}{tx.amount.toLocaleString()}
                                     </Typography>
                                 </View>
                             );
